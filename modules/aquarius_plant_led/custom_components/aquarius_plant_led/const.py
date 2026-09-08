@@ -2,7 +2,7 @@
 
 DOMAIN = "aquarius_plant_led"
 NAME = "Aquarius Plant LED"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 DEFAULT_PORT = 8080
 POLL_SECONDS = 30
 MAX_BACKOFF_SECONDS = 300

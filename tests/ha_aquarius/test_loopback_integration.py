@@ -1,5 +1,6 @@
 """Actual HA and actual TCP client together, against a loopback-only simulator."""
 
+import asyncio
 from unittest.mock import patch
 
 import pytest
@@ -113,3 +114,70 @@ async def test_ignored_write_echo_is_unavailable_then_recovers_without_replay(ha
     assert coordinator.last_update_success
     assert hass.states.get(channel).state == "30"
     assert lamp.writes == writes
+
+
+@pytest.mark.parametrize("phase", ("client_lock", "pre_read"))
+async def test_native_service_deadline_settles_real_client_and_cannot_write_after_release(
+    hass, loopback_entry, phase
+):
+    lamp, entry = loopback_entry
+    coordinator = entry.runtime_data
+    client = coordinator.client
+    if phase == "client_lock":
+        await client._lock.acquire()
+    else:
+        lamp.response_override = lambda frame, response: None
+    with (
+        patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0),
+        patch("custom_components.aquarius_plant_led.coordinator.EXPLICIT_COMMAND_TIMEOUT", 0.04),
+    ):
+        with pytest.raises(HomeAssistantError, match="expired before completion"):
+            await hass.services.async_call(
+                "number",
+                "set_value",
+                {"entity_id": entity_id(hass, entry, "number", "channel_a"), "value": 11},
+                blocking=True,
+            )
+    assert coordinator._active_command is None
+    assert client._active_task is None
+    assert client._writer is None
+    assert not coordinator.last_update_success
+    if phase == "client_lock":
+        client._lock.release()
+    lamp.response_override = None
+    await asyncio.sleep(0.06)
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+    assert lamp.writes == []
+
+
+async def test_native_timeout_after_channel_write_never_sends_delayed_mode_or_restore(
+    hass, loopback_entry
+):
+    lamp, entry = loopback_entry
+    coordinator = entry.runtime_data
+    with (
+        patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0),
+        patch("custom_components.aquarius_plant_led.coordinator.EXPLICIT_COMMAND_TIMEOUT", 0.1),
+        patch("custom_components.aquarius_plant_led.client.SYSTEM_CHANNEL_DELAY", 0.001),
+        patch("custom_components.aquarius_plant_led.client.MANUAL_SAVE_DELAY", 0.3),
+    ):
+        with pytest.raises(HomeAssistantError, match="expired before completion"):
+            await hass.services.async_call(
+                "number",
+                "set_value",
+                {"entity_id": entity_id(hass, entry, "number", "channel_a"), "value": 11},
+                blocking=True,
+            )
+        assert coordinator.client._active_task is None
+        assert coordinator.client._writer is None
+        assert not coordinator.last_update_success
+        assert len(lamp.writes) == 1
+        assert lamp.writes[0] == protocol.channel_write_frame(
+            (11, 20, 30, 40, 50, 60), swap_cd=True
+        )
+        await asyncio.sleep(0.32)
+        assert len(lamp.writes) == 1
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+    assert len(lamp.writes) == 1

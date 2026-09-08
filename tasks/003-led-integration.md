@@ -67,6 +67,65 @@ These are synthetic checks. App update and live cache persistence remain pending
 The authorization checkpoint `5ee5cf3` matched its remote SHA and
 [completed CI successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34287526405).
 
+## Continuation live delivery and recovery evidence
+
+Manager source `4e27a86` and PR #7 both completed CI successfully; merge main is
+`56057402ccf87bdddfbc1d6e66eddd6578d01807`.
+[Manager 0.1.2](https://github.com/djeZo888/HAHAPent/releases/tag/v0.1.2)
+was published and updated through the actual App-store path. Actual administrator
+Ingress Refresh fetched canonical metadata without installing code. Settings
+and records were preserved; a normal App restart retained the validated cache
+and successful-refresh timestamp. Protection and API/network permissions remain
+unchanged. Read-only module 0.1.0 was then installed through the actual Manager
+UI. The gated Core restart passed configuration checks and returned with Core
+running, KNX loaded/connected and unchanged startup/project baselines. Native
+module configuration and remaining lifecycle actions are pending.
+
+The [independent recovery review](../docs/aquarius-validation-review.md) and
+26 offline worker tests preceded renewed controls. The exact reviewed worker
+ran detached inside the SSH App's isolated Python runtime; launching SSH sessions
+returned in 0.13–0.15 seconds. These are actual native TCP tests, separate from
+Home Assistant entity-service tests and optical observations.
+
+| Channel | Single-channel delta | Experiment | Original channels and Automatic restored | Excursion |
+| --- | ---: | --- | --- | ---: |
+| A | +1 point | PASS | PASS | 2.511 s |
+| B | -1 point | PASS | PASS | 2.598 s |
+| C | -1 point | PASS | PASS | 2.462 s |
+| D | +1 point | PASS | PASS | 2.519 s |
+| E | +1 point | PASS | PASS | 2.318 s |
+| F | +1 point | PASS | FAIL within bound; later deliberate recovery PASS | about 53.16 s total |
+
+Each A–E test independently read the exact changed vector and Manual mode,
+restored and confirmed all original channels, then separately restored and
+confirmed Automatic. Subsequent read-only checks passed. Positive one-point
+changes were used where the current channel did not permit a reduction.
+
+F's changed state was confirmed at 0.716 seconds. Its first fresh recovery guard
+read timed out after 0.8 seconds, and the worker ended at 1.518 seconds without
+using the remaining recovery reserve. The sequence stopped; a separate guarded
+recovery required current state to match the known test change, restored the
+original channels and Automatic, and confirmed both. That recovery transaction
+took 1.887 seconds. Total excursion is estimated at 53.16 seconds using HA-side
+report modification times plus the initial excursion timing; it is approximate,
+not a monotonic cross-process measurement. Two subsequent read-only checks
+confirmed Automatic. This is a second failed bounded test, not six-channel
+acceptance. No released write profile is enabled.
+
+The immediate defect is abandoning cleanup after a single transient recovery
+read failure. Whether the timeout occurred at connection setup or queried reply
+is not established by that report. Repair requires bounded read-only retries
+while reserving command/recovery time; no write retry, stale replay, or larger
+ten-second allowance is authorized. Further experiments remain paused until
+that repair passes offline tests and independent review. Safe implementation,
+publication and read-only native lifecycle work continue.
+
+The interim 0.1.1 module source adds response-backed write-connection lifetime,
+strict echo quarantine, fresh-socket confirmation, current Automatic vector
+preservation and a three-second admitted-action deadline covering debounce and
+lock queues. All profiles remain read-only. Local synthetic checks: **304 unit
+tests PASS**, **47 native HA tests PASS**, Ruff/catalog/bundle checks PASS.
+
 ## Historical revision-2 baseline and authorization
 
 Task 002 is complete at main commit `3ce396c27296e33473dbbbeebe68bff034d8203d`.

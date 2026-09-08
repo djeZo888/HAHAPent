@@ -120,6 +120,60 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.lamp.writes, [])
         self.assertIsNone(self.client.last_state)
 
+    async def test_explicit_channel_change_during_automatic_preserves_fresh_other_channels(self):
+        self.lamp.mode = protocol.MODE_AUTOMATIC
+        observed = await self.client.refresh()
+        fresh = (12, 24, 36, 48, 60, 72)
+        self.lamp.channels = fresh
+        state = await self.client.set_channel(2, 35, expected_state=observed)
+        self.assertEqual(state.channels, (12, 24, 35, 48, 60, 72))
+        self.assertEqual(state.system.mode_raw, protocol.MODE_MANUAL)
+        self.assertEqual(
+            self.lamp.writes,
+            [
+                protocol.channel_write_frame(state.channels),
+                protocol.mode_frame(protocol.MODE_MANUAL),
+            ],
+        )
+
+    async def test_explicit_manual_selection_allows_automatic_channel_drift(self):
+        self.lamp.mode = protocol.MODE_AUTOMATIC
+        observed = await self.client.refresh()
+        fresh = (12, 24, 36, 48, 60, 72)
+        self.lamp.channels = fresh
+        state = await self.client.set_mode(protocol.MODE_MANUAL, expected_state=observed)
+        self.assertEqual(state.channels, fresh)
+        self.assertEqual(state.system.mode_raw, protocol.MODE_MANUAL)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(protocol.MODE_MANUAL)])
+
+    async def test_automatic_drift_does_not_allow_changed_mode_or_profile(self):
+        for changed_field, changed_value in (
+            ("mode", protocol.MODE_MANUAL),
+            ("version", (2, 6)),
+            ("controller", (0x14, 0x32)),
+            ("count", 3),
+        ):
+            with self.subTest(field=changed_field):
+                self.lamp.mode = protocol.MODE_AUTOMATIC
+                self.lamp.version = (2, 5)
+                self.lamp.controller = (0x12, 0x3C)
+                self.lamp.count = 6
+                self.lamp.channels = (10, 20, 30, 40, 50, 60)
+                observed = await self.client.refresh()
+                self.lamp.channels = (12, 24, 36, 48, 60, 72)
+                setattr(self.lamp, changed_field, changed_value)
+                with self.assertRaises(client.ConflictError):
+                    await self.client.set_channel(0, 11, expected_state=observed)
+                self.assertEqual(self.lamp.writes, [])
+
+    async def test_automatic_poll_drift_never_causes_a_command(self):
+        self.lamp.mode = protocol.MODE_AUTOMATIC
+        await self.client.refresh()
+        self.lamp.channels = (12, 24, 36, 48, 60, 72)
+        state = await self.client.refresh()
+        self.assertEqual(state.channels, self.lamp.channels)
+        self.assertEqual(self.lamp.writes, [])
+
     async def test_postwrite_competing_controller_aborts_without_restore_or_retry(self):
         await self.client.refresh()
 
@@ -158,6 +212,128 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.lamp.writes), 2)
         self.assertEqual(self.lamp.connections, 3)
 
+    async def test_write_connection_stays_for_queried_mode_after_delayed_processing(self):
+        self.lamp.channel_operation = 0xFA
+        self.lamp.fragment = True
+        self.lamp.echo_writes = True
+        self.lamp.mode = protocol.MODE_AUTOMATIC
+        await self.client.refresh()
+        processed = asyncio.Event()
+        barrier_seen = asyncio.Event()
+
+        async def delayed_processing(connection, frame):
+            if frame == protocol.mode_frame(protocol.MODE_MANUAL):
+                # Simulator-only latency, not a claim about the real controller.
+                await asyncio.sleep(0.08)
+                processed.set()
+            if connection == 2 and frame == protocol.SYSTEM_QUERY and self.lamp.writes:
+                self.assertTrue(processed.is_set())
+                barrier_seen.set()
+
+        self.lamp.hook = delayed_processing
+        state = await self.client.set_channel(0, 9)
+        self.assertTrue(barrier_seen.is_set())
+        self.assertEqual(state.channels, (9, 20, 30, 40, 50, 60))
+        self.assertEqual(state.system.mode_raw, protocol.MODE_MANUAL)
+        self.assertEqual(self.lamp.connections, 3)
+        write_session = [
+            (frame, when) for connection, frame, when in self.lamp.observed if connection == 2
+        ]
+        mode_at = next(when for frame, when in write_session if frame == protocol.mode_frame(1))
+        barrier_at = [when for frame, when in write_session if frame == protocol.SYSTEM_QUERY][-1]
+        self.assertGreaterEqual(barrier_at - mode_at, client.WRITE_DRAIN_PAUSE - 0.01)
+        self.assertEqual(
+            [frame for connection, frame, _time in self.lamp.observed if connection == 2],
+            [
+                protocol.SYSTEM_QUERY,
+                protocol.CHANNEL_QUERY,
+                protocol.channel_write_frame(state.channels),
+                protocol.mode_frame(protocol.MODE_MANUAL),
+                protocol.SYSTEM_QUERY,
+            ],
+        )
+        self.assertEqual(
+            [frame for connection, frame, _time in self.lamp.observed if connection == 3],
+            [protocol.SYSTEM_QUERY, protocol.CHANNEL_QUERY],
+        )
+
+    async def test_unconfirmed_barrier_mode_stops_before_reconnect_without_retry(self):
+        self.lamp.mode = protocol.MODE_AUTOMATIC
+        await self.client.refresh()
+        self.lamp.ignore_writes = True
+        with self.assertRaisesRegex(client.ConflictError, "before disconnect"):
+            await self.client.set_mode(protocol.MODE_MANUAL)
+        self.assertEqual(self.lamp.connections, 2)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(protocol.MODE_MANUAL)])
+        self.assertIsNone(self.client.last_state)
+
+    async def test_write_echo_without_queried_system_reply_does_not_satisfy_barrier(self):
+        await self.client.refresh()
+
+        def only_echo_barrier(frame, response):
+            if frame == protocol.SYSTEM_QUERY and self.lamp.writes:
+                return protocol.mode_frame(protocol.MODE_MANUAL)
+            return response
+
+        self.lamp.response_override = only_echo_barrier
+        with self.assertRaises(client.AquariusError):
+            await self.client.set_channel(0, 9)
+        self.assertEqual(self.lamp.connections, 2)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertIsNone(self.client.last_state)
+
+    async def test_profile_change_at_barrier_stops_before_reconnect(self):
+        await self.client.refresh()
+
+        async def changed_profile(connection, frame):
+            if connection == 2 and frame == protocol.SYSTEM_QUERY and self.lamp.writes:
+                self.lamp.version = (2, 6)
+
+        self.lamp.hook = changed_profile
+        with self.assertRaises(client.ConflictError):
+            await self.client.set_channel(0, 9)
+        self.assertEqual(self.lamp.connections, 2)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertIsNone(self.client.last_state)
+
+    async def test_unexpected_status_during_postwrite_quarantine_is_not_a_barrier(self):
+        await self.client.refresh()
+
+        def unsolicited_status(frame, response):
+            if frame == protocol.mode_frame(protocol.MODE_MANUAL):
+                return system_reply(mode=protocol.MODE_MANUAL)
+            return response
+
+        self.lamp.response_override = unsolicited_status
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.set_channel(0, 9)
+        self.assertEqual(self.lamp.connections, 2)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertEqual(
+            sum(
+                connection == 2 and frame == protocol.SYSTEM_QUERY
+                for connection, frame, _when in self.lamp.observed
+            ),
+            1,
+        )
+        self.assertIsNone(self.client.last_state)
+
+    async def test_unexpected_status_after_channel_blocks_manual_save(self):
+        await self.client.refresh()
+        channel_command = protocol.channel_write_frame((9, 20, 30, 40, 50, 60))
+
+        def unsolicited_status(frame, response):
+            if frame == channel_command:
+                return system_reply(mode=protocol.MODE_MANUAL)
+            return response
+
+        self.lamp.response_override = unsolicited_status
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.set_channel(0, 9)
+        self.assertEqual(self.lamp.connections, 2)
+        self.assertEqual(self.lamp.writes, [channel_command])
+        self.assertIsNone(self.client.last_state)
+
     async def test_concurrent_updates_serialize_entire_read_modify_write(self):
         await self.client.refresh()
         first, second = await asyncio.gather(
@@ -174,6 +350,7 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
                 protocol.channel_write_frame(first.channels),
                 protocol.mode_frame(1),
                 protocol.SYSTEM_QUERY,
+                protocol.SYSTEM_QUERY,
                 protocol.CHANNEL_QUERY,
             ]
             + [
@@ -181,6 +358,7 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
                 protocol.CHANNEL_QUERY,
                 protocol.channel_write_frame(second.channels),
                 protocol.mode_frame(1),
+                protocol.SYSTEM_QUERY,
                 protocol.SYSTEM_QUERY,
                 protocol.CHANNEL_QUERY,
             ],

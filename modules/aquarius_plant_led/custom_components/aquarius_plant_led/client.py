@@ -14,6 +14,7 @@ from typing import Awaitable, Callable, Optional
 from .protocol import (
     CHANNEL_QUERY,
     KNOWN_MODES,
+    MODE_AUTOMATIC,
     MODE_MANUAL,
     SYSTEM_QUERY,
     ProtocolError,
@@ -29,6 +30,7 @@ from .protocol import (
 MAX_RECEIVED_BYTES = 8192
 MANUAL_SAVE_DELAY = 0.1
 SYSTEM_CHANNEL_DELAY = 0.2
+WRITE_DRAIN_PAUSE = 0.2
 
 
 class AquariusError(Exception):
@@ -111,10 +113,12 @@ class AquariusClient:
             values = list(before.channels)
             values[index] = value
             desired = tuple(values)
-            await self._send(channel_write_frame(desired, swap_cd=before.system.swap_cd))
-            await asyncio.sleep(MANUAL_SAVE_DELAY)
-            await self._send(mode_frame(MODE_MANUAL))
-            after = await self._readback()
+            channel_command = channel_write_frame(desired, swap_cd=before.system.swap_cd)
+            manual_command = mode_frame(MODE_MANUAL)
+            await self._send(channel_command)
+            await self._quarantine(MANUAL_SAVE_DELAY, (channel_command,))
+            await self._send(manual_command)
+            after = await self._readback(before, MODE_MANUAL, (channel_command, manual_command))
             self._verify_profile(before, after)
             if after.system.mode_raw != MODE_MANUAL or after.channels != desired:
                 raise ConflictError("channel or mode readback differed; no restore was attempted")
@@ -131,7 +135,7 @@ class AquariusClient:
         async def operation() -> DeviceState:
             before = await self._prepare_write(expected_state)
             await self._send(command)
-            after = await self._readback()
+            after = await self._readback(before, mode, (command,))
             self._verify_profile(before, after)
             if after.system.mode_raw != mode:
                 raise ConflictError("mode readback differed; no restore was attempted")
@@ -207,7 +211,18 @@ class AquariusClient:
         )
         self._decoder = StreamDecoder()
 
-    async def _readback(self) -> DeviceState:
+    async def _readback(
+        self, before: DeviceState, expected_mode: int, commands: tuple[bytes, ...]
+    ) -> DeviceState:
+        # drain() confirms transport-buffer acceptance, not device processing.
+        # Keep the write connection open until a queried system reply confirms
+        # the requested mode and unchanged profile. Exact echoes of the writes
+        # and ACK candidates are consumed but never counted as confirmation.
+        await self._quarantine(WRITE_DRAIN_PAUSE, commands)
+        system = parse_system(await self._query(SYSTEM_QUERY, ignored_primary=commands))
+        self._verify_system_profile(before.system, system)
+        if system.mode_raw != expected_mode:
+            raise ConflictError("queried mode did not confirm the command before disconnect")
         # This controller family can answer a read with E2 FA, the same opcode
         # as a channel write. Never accept the write socket's echo as readback.
         await self._disconnect()
@@ -217,7 +232,13 @@ class AquariusClient:
     async def _prepare_write(self, expected_state: Optional[DeviceState]) -> DeviceState:
         previous = expected_state if expected_state is not None else self._last_state
         before = await self._read_state()
-        if previous is None or before != previous:
+        if previous is None or before.system != previous.system:
+            raise ConflictError("device state changed before command; refresh and review it")
+        # An explicit user action may interrupt a running program. Its levels
+        # can legitimately change since HA's last poll: preserve the other five
+        # from this fresh read, never from the older observed vector. A changed
+        # mode/profile or changed Manual output still indicates a conflict.
+        if before.system.mode_raw != MODE_AUTOMATIC and before.channels != previous.channels:
             raise ConflictError("device state changed before command; refresh and review it")
         if not before.system.write_supported or before.system.mode_raw not in KNOWN_MODES:
             raise UnsupportedDeviceError("device profile or current mode is unverified for writes")
@@ -225,7 +246,10 @@ class AquariusClient:
 
     @staticmethod
     def _verify_profile(before: DeviceState, after: DeviceState) -> None:
-        a, b = before.system, after.system
+        AquariusClient._verify_system_profile(before.system, after.system)
+
+    @staticmethod
+    def _verify_system_profile(a: SystemReply, b: SystemReply) -> None:
         if (
             a.version_bytes != b.version_bytes
             or a.controller_bytes != b.controller_bytes
@@ -263,13 +287,17 @@ class AquariusClient:
         return DeviceState(system, channels)
 
     async def _wait_before_channel_query(self) -> None:
-        """Pause between queries and reject status sent before it was requested.
+        """Pause between queries and reject status sent before it was requested."""
+        await self._quarantine(SYSTEM_CHANNEL_DELAY)
+
+    async def _quarantine(self, duration: float, echoes: tuple[bytes, ...] = ()) -> None:
+        """Consume a receive boundary interval without mistaking echoes for status.
 
         Merely clearing the decoder would miss data already waiting in the
         stream reader. Consume the entire pause, accepting only acknowledgement
         candidates or complete extended messages, then require a clean boundary.
         """
-        deadline = asyncio.get_running_loop().time() + SYSTEM_CHANNEL_DELAY
+        deadline = asyncio.get_running_loop().time() + duration
         while True:
             remaining = deadline - asyncio.get_running_loop().time()
             if remaining <= 0:
@@ -281,21 +309,25 @@ class AquariusClient:
             except asyncio.TimeoutError:
                 break
             for message in self._decode(data):
-                if message.kind == "primary":
-                    raise ProtocolError("unsolicited status before the channel query")
+                if message.kind == "primary" and message.raw not in echoes:
+                    raise ProtocolError("unsolicited status before the next query")
         if self._decoder.buffered_bytes:
-            raise ProtocolError("unfinished unsolicited frame before the channel query")
+            raise ProtocolError("unfinished unsolicited frame before the next query")
 
-    async def _query(self, query: bytes) -> bytes:
+    async def _query(self, query: bytes, *, ignored_primary: tuple[bytes, ...] = ()) -> bytes:
         await self._send(query)
-        return await asyncio.wait_for(self._read_reply(query), self.timeout)
+        return await asyncio.wait_for(self._read_reply(query, ignored_primary), self.timeout)
 
-    async def _read_reply(self, query: bytes) -> bytes:
+    async def _read_reply(self, query: bytes, ignored_primary: tuple[bytes, ...] = ()) -> bytes:
         while True:
             if self._reader is None:
                 raise AquariusError("connection is not available")
             data = await self._reader.read(1024)
-            messages = self._decode(data)
+            messages = [
+                message
+                for message in self._decode(data)
+                if message.kind != "primary" or message.raw not in ignored_primary
+            ]
             for message in messages:
                 if message.kind != "primary" or message.raw[1] != query[1]:
                     continue
