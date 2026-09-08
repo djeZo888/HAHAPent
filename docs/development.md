@@ -137,6 +137,12 @@ Coordinator verification on 2026-09-09 (Europe/Ljubljana):
   from the repository suite and actual lamp evidence.
 - Checkpoint `a8f7176`: remote SHA matched; [CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34282588822).
   This first checkpoint contains privacy/task evidence, not the later integration.
+- Candidate source `56a0b81`: exact remote SHA and
+  [completed hosted CI](https://github.com/djeZo888/HAHAPent/actions/runs/34284413351)
+  **PASS**, including native HA framework tests. The
+  [read-only prerelease](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
+  has three verified public assets; unauthenticated downloads, exact hash matching,
+  empty packaged write allowlist and actual Manager archive validation **PASS**.
 
 Tests cover query echoes, partial/coalesced/extended frames, both channel orders,
 unknown modes, invalid percentages, fresh-connection post-write verification,

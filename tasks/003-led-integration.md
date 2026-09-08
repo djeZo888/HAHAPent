@@ -100,6 +100,26 @@ and an authorized path to deliver catalog metadata to the installed Manager.
 Actual setup, update/rollback/removal, Manager-off operation and Mac-off operation
 remain NOT_TESTED. No optical or calibrated output claim follows from byte reads.
 
+## Candidate publication
+
+Source checkpoint `56a0b81c31beddcecf56a96e6027d80d0293de57` contains the native
+read-only candidate, tests, builder and usage/recovery documentation. Its remote
+SHA matched and [hosted CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34284413351),
+including the separate native HA test job. The first evidence/privacy checkpoint
+is `a8f717681dca6ed2f3336bd2b80157a9aec57f8f`.
+
+The independently versioned artifact is `aquarius-plant-led-0.1.0.zip`, built
+directly from that source commit with fixed ZIP metadata. SHA-256:
+`b65d2ce15ea64529d1b33a988c78d32454c48dce55d4f5b64fd195af1cbf9777`.
+The release is explicitly a prerelease and its catalog description says read-only.
+[Published candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0):
+the ZIP, catalog snapshot and SHA256SUMS were downloaded again without credentials;
+all three matched the uploaded bytes. The actual Manager archive validator accepted
+the downloaded ZIP in an isolated local staging directory. This does not constitute
+installation through the live Manager or native test-dev HA acceptance.
+The canonical Manager build-context catalog copy is synchronized in source;
+the installed App image and Manager runtime logic are unchanged.
+
 ## Intended scope
 
 Native host/port setup and reconfiguration; one device with six A–F percentage

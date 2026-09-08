@@ -22,7 +22,11 @@ tests. No physical controls are part of the device-free fixture.
 
 Read the [App usage and recovery guide](../manager/DOCS.md),
 [JSON contract](catalog.md), and [Task 002 evidence](../tasks/002-suite-manager.md).
-The ordinary catalog is intentionally empty until production modules are ready.
+The repository catalog includes the read-only Aquarius prerelease candidate.
+The installed Manager 0.1.1 still has its original empty built-in catalog:
+Refresh does not fetch a replacement from the repository. See
+[Task 003's delivery blocker](../tasks/003-led-integration.md#distribution-constraint-under-review)
+before attempting installation; no App update has been deployed for this candidate.
 The acceptance-test catalog is separate and requires an explicit test action.
 
 # Reproducible App source build

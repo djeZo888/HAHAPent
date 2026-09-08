@@ -1,4 +1,4 @@
-"""Offline contract tests use only synthetic catalogs and temporary files."""
+"""Offline contract tests use public metadata, synthetic catalogs and temporary files."""
 
 import contextlib
 import copy
@@ -22,10 +22,10 @@ class CatalogTests(unittest.TestCase):
             self.assertTrue(any(contains in error for error in errors), errors)
         return errors
 
-    def test_empty_builtin_catalog(self):
+    def test_builtin_catalog_is_valid_and_excludes_device_free_fixture(self):
         catalog = load_catalog(ROOT / "hahapent.json")
-        self.assertEqual(catalog["modules"], [])
         self.assertEqual(validate_catalog(catalog), [])
+        self.assertTrue(all(m["integration_domain"] != "hahapent_test" for m in catalog["modules"]))
 
     def test_valid_synthetic_catalog(self):
         self.assertEqual(validate_catalog(self.catalog), [])

@@ -37,7 +37,7 @@ python tooling/build_module.py --domain aquarius_plant_led \
 ```
 
 The builder reads ordinary native integration files directly from Git objects,
-not the working tree. It rejects replacement refs, unsafe paths, executables,
+not the working tree. It ignores local Git replacement refs and rejects unsafe paths, executables,
 private/non-native files, invalid manifests and unsupported dependencies; fixed
 timestamps, ordering, permissions and stored ZIP entries make bytes reproducible.
 The emitted metadata records exact provenance and SHA-256; publication and catalog
