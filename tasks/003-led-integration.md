@@ -1,6 +1,7 @@
 # Task 003 — Aquarius Plant LED
 
-Status: **IN PROGRESS**. This task follows the owner's revision-2 assignment;
+Status: **BLOCKED — hardware control and installed catalog delivery**.
+This task follows the owner's revision-2 assignment;
 the original package, device configuration and packet evidence are private.
 
 ## Baseline and authorization
@@ -32,9 +33,16 @@ network policy, infrastructure and production remain outside scope.
 | Initial SSH forwarding attempt | FAIL | Connection reset; forwarding ended without SSH configuration changes |
 | Supplied probe against channel response | FAIL | Probe required E2 FC, while the queried lamp returned E2 FA |
 | Adapted read-only probe | PASS | Existing HA-side netcat transport; two queries, explicit E2 FA acceptance |
-| Bounded lamp writes | NOT_TESTED | Awaiting reviewed client and restoration procedure |
-| Native HA and Manager lifecycle | NOT_TESTED | Awaiting tested module and deployment gate |
+| Initial bounded channel test | FAIL | One-point Channel A change reached Manual; immediate reconnect verification failed and restoration exceeded ten seconds |
+| Deliberate restoration | PASS | Fresh state matched the commanded change; all original channel values and Automatic mode were subsequently restored and read back |
+| Further lamp controls | BLOCKED | Stopped after unexpected behavior; no public write-enabled controller profiles |
+| Native HA on protected test-dev | NOT_TESTED | Candidate not installed; real HA framework tests use synthetic fixtures |
+| Actual Manager installation/lifecycle | BLOCKED | Installed App cannot load a new built-in catalog without an App update |
+| Encrypted deployment backup / Core restart | NOT_REQUIRED | No HA deployment or Core restart occurred |
 | Optical colour mapping | NOT_TESTED | A–F retained; no inferred wavelength mapping |
+| Repository synthetic suite | PASS | 258 tests on Python 3.9.6, including 51 protocol/client and 12 packaging tests |
+| Native HA framework suite | PASS | 38 tests on Python 3.14.7 / HA 2026.9.1, including two actual-client loopback cases |
+| Current test-dev health | PASS | Core running, KNX entries loaded, Manager 0.1.1 started and protected; no deployment/restart |
 
 The supplied app-static evidence establishes raw TCP frame constructors and
 the controller-specific C/D permutation. It does not establish firmware behavior.
@@ -52,7 +60,45 @@ source-identity guard. Publishing the new root catalog alone therefore cannot
 make this module appear in the installed Manager. Rebuilding the Manager is
 excluded by this assignment. Do not bypass ownership, directly copy acceptance
 code, edit App internals, or weaken source identity to conceal this constraint.
-The concrete deployment decision will be recorded once the module is reviewable.
+The smallest exception is a versioned App packaging update containing the new
+catalog while leaving Manager logic unchanged. A durable alternative is an
+explicitly authorized built-in remote-catalog refresh feature. Neither has been
+implemented or deployed under the current no-rebuild constraint.
+
+## Failed bounded control and recovery
+
+The reviewed client passed two stable, read-only refreshes. The first test sent
+only a one-percentage-point Channel A reduction and the app-derived Manual
+command. The immediate fresh-connection readback failed; a later read confirmed
+the exact changed channel set and Manual mode. The harness stopped without
+automatically overwriting an unknown state, but its initial failure path did not
+complete restoration inside ten seconds. This is a failed safeguard outcome,
+not a successful bounded control test.
+
+A separate, guarded recovery first required fresh state to equal the known test
+result. It restored the original six values, but Automatic mode did not apply
+in that sequence. A subsequent mode-only recovery kept its connection open for
+a bounded response and then independently read the original values and Automatic
+mode. Recovery passed. There was no channel sweep, shutdown, schedule write,
+Shelly action or further control testing.
+
+The exact cause of immediate reconnect failure and command-sequence behavior is
+unresolved. HA-side SSH/netcat transport lifetime, controller timing, and actual
+firmware behavior must be distinguished with read-only investigation before a
+revised bounded plan. Do not silently add command retries or claim a timing fix.
+The public candidate keeps its write-profile allowlist empty, so no production
+control path can write to this or any other controller.
+
+Native setup describes the read-only candidate. Six Number values remain
+available; channel/mode actions fail explicitly as unvalidated before calling the
+client. A Write support diagnostic distinguishes this state from a network outage.
+
+Resume requires a reviewed restoration procedure that handles an uncertain
+command within the bounded window and does not overwrite competing changes;
+successful small-change/readback/restoration tests for all six channels;
+and an authorized path to deliver catalog metadata to the installed Manager.
+Actual setup, update/rollback/removal, Manager-off operation and Mac-off operation
+remain NOT_TESTED. No optical or calibrated output claim follows from byte reads.
 
 ## Intended scope
 

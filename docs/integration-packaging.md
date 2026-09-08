@@ -27,6 +27,29 @@ their metadata and artifacts to the approved public GitHub repository. See the
 5. Verify install/configure/update/recovery/removal with the native HA lifecycle.
    Preserve unrelated code and configuration; do not claim an untested HA range.
 
+## Generic module builder
+
+Build a reviewed and published source commit with:
+
+```sh
+python tooling/build_module.py --domain aquarius_plant_led \
+  --revision <full-source-commit> --output-dir <new-output-directory>
+```
+
+The builder reads ordinary native integration files directly from Git objects,
+not the working tree. It rejects replacement refs, unsafe paths, executables,
+private/non-native files, invalid manifests and unsupported dependencies; fixed
+timestamps, ordering, permissions and stored ZIP entries make bytes reproducible.
+The emitted metadata records exact provenance and SHA-256; publication and catalog
+updates remain separate reviewed steps. A prerelease candidate must clearly state
+its limits in the release, catalog description and module documentation.
+
+Manager 0.1.1 embeds the built-in catalog. Publishing root `hahapent.json` and its
+canonical build-context copy does not update an already installed App image.
+Refreshing or adding the same source cannot bypass that limitation. An App
+packaging update or a supported remote-catalog feature requires authorization;
+do not patch installed containers or directly copy acceptance integrations.
+
 # Device-free acceptance assets
 
 `modules/hahapent_test/` is excluded from the normal catalog. Its version A is

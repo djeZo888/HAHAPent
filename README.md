@@ -11,11 +11,14 @@ installation, updates, removal, and code recovery.
 | --- | --- | --- |
 | [001](tasks/001-access-and-repository.md) | Access and repository bootstrap | Complete; historical evidence retained |
 | [002](tasks/002-suite-manager.md) | Installable Suite Manager and safe module lifecycle | Complete; tested release 0.1.1 installed and final cleanup verified |
-| [003](tasks/003-led-integration.md) | Aquarius Plant Plus60 / AMled integration | Not started; separate authorization and owner details required |
+| [003](tasks/003-led-integration.md) | Aquarius Plant LED | Read-only candidate; bounded control test failed and installed catalog delivery is blocked |
 
 [Released Manager 0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/v0.1.1) targets amd64 and exposes no LAN management port.
-The normal catalog remains empty; a separate device-free A/B integration
-supports acceptance testing. License selection is pending.
+The [Aquarius module](modules/aquarius_plant_led/README.md) is a read-only
+prerelease candidate; it is not a completed control integration. Manager 0.1.1
+has an embedded catalog and cannot receive this new module through Refresh alone.
+A separate device-free A/B integration supports acceptance testing. License
+selection is pending.
 
 The real Ingress lifecycle exercised installation, native setup, update, rollback,
 native removal, and code uninstall. The App also updated from `0.1.0` to `0.1.1`

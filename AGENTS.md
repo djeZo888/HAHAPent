@@ -15,6 +15,10 @@ seconds, with deliberate restoration; stop on unexpected changes or competing
 controllers. Necessary test-dev Core restarts require the runbook safety gate.
 No startup, polling, reconnect or reload path may write lamp state. Private target
 configuration and supplied evidence stay outside Git. Do not rebuild Manager.
+The initial bounded lamp test failed; original channels and Automatic mode were
+deliberately restored and verified. Further lamp writes are stopped pending a
+revised safe restoration plan and resolved transport/firmware behavior. The
+published candidate must remain read-only with no enabled write profiles.
 Do not regenerate credentials or repeat bootstrap. License selection is pending.
 
 ## Credentials and privacy

@@ -114,6 +114,37 @@ After each push, independently verify the actual remote commit and the completed
 CI conclusion for that commit. Queued or running CI is not a passing result.
 Never force-push or rewrite shared history.
 
+## Task 003 candidate verification
+
+The Aquarius candidate is read-only: all write profiles are disabled after the
+first bounded hardware test failed its reconnect/restoration window. The original
+lamp values and Automatic mode were subsequently restored and confirmed. This
+failure and the installed Manager's catalog delivery constraint are recorded in
+[Task 003](../tasks/003-led-integration.md), separately from software tests.
+
+Coordinator verification on 2026-09-09 (Europe/Ljubljana):
+
+- `.venv/bin/python -m unittest discover -s tests -q`: **258 PASS** on Python 3.9.6.
+  Includes 51 protocol/client tests and 12 committed-source packaging tests.
+- `python -m pytest tests/ha_aquarius -q --disable-socket --allow-unix-socket`:
+  **38 PASS** with Python 3.14.7, HA 2026.9.1 and dependencies pinned in
+  `requirements-ha-test.txt`. See [native test setup](../tests/ha_aquarius/README.md).
+  Two tests use the actual client and a TCP simulator, with connections confined
+  to loopback. The remaining framework fixtures disable network sockets.
+- `.venv/bin/ruff check .`, `tooling/validate_catalog.py`, and
+  `tooling/sync_manager_bundle.py --check`: **PASS** for the source checkpoint.
+- Supplied original reference suite: **21 PASS**, offline/synthetic, separate
+  from the repository suite and actual lamp evidence.
+- Checkpoint `a8f7176`: remote SHA matched; [CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34282588822).
+  This first checkpoint contains privacy/task evidence, not the later integration.
+
+Tests cover query echoes, partial/coalesced/extended frames, both channel orders,
+unknown modes, invalid percentages, fresh-connection post-write verification,
+stale-state conflicts, no retry/replay, cancellation during socket cleanup,
+coordinator queue invalidation, native reconfiguration/identity, and quiescing
+before platform unload. Tests deliberately use fictional write-enabled profiles;
+the packaged profile allowlist is empty. No CI accesses the private lamp or HA.
+
 ## Task 002 release-code verification
 
 The coordinator confirmed the following results for Manager 0.1.1 and release-code
