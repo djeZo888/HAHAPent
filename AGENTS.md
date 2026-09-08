@@ -1,10 +1,16 @@
 # HAHAPent project instructions
 
 ## Current scope
-Task 001 initializes this single repository and verifies access to the approved
-test-dev environment. Do not implement the Suite Manager (Task 002) or aquarium
-LED integration (Task 003). The manager folder remains a scaffold without an
-installable App manifest. License selection is pending.
+Task 001 is complete. The revised Task 002 assignment explicitly authorizes
+implementing, installing, starting/stopping/restarting and testing HAHAPent
+Suite Manager on the protected profile's test-dev HA, including the complete
+lifecycle of a device-free test integration through the real Ingress interface.
+Necessary HA Core restarts are authorized only after the startup/KNX preflight
+and current encrypted backup/decryption checks in the runbook. Do not ask for
+routine approval already granted by that assignment. Stop a restart if unsafe
+physical effects cannot be excluded and report the concrete blocker.
+Task 003 (aquarium LED integration) remains unauthorized and awaits owner details.
+Do not regenerate credentials or repeat bootstrap. License selection is pending.
 
 ## Credentials and privacy
 Resolve the private profile at `~/.config/hahapent/bootstrap.json`, then its
@@ -27,9 +33,13 @@ test, or review isolated assigned source files; never provide them raw secrets.
 Use only the exact repository and host selected by the protected profile.
 Preserve KNX, existing integrations, automations, App keys/options, and remote
 history. No intentional device controls, production access, network scans,
-Proxmox administration, Core/Supervisor/OS/VM restarts, or firmware upgrades.
-Take and verify a pre-change backup before authorized HA App configuration.
-Only the official Terminal & SSH App may be installed/configured for Task 001.
+Proxmox administration, Supervisor/OS/VM restarts, or firmware upgrades.
+Task 002 permits necessary Core restarts only after the documented safety gate.
+Before deployment take a fresh encrypted backup, download it privately, retain
+its recovery key and verify isolated decryption/readability where supported.
+Do not restore over live HA merely as a test. Reuse Terminal & SSH unchanged.
+Install HAHAPent through the actual repository/App-store path; expose no LAN
+management port and enforce administrator authorization behind trusted Ingress.
 App-container root is not Proxmox or HA OS host root. Never disable TLS/SSH
 verification, App protection mode, or existing security protections.
 
@@ -52,5 +62,5 @@ available to public CI. A new task must not inherit authority to mutate HA
 merely from a previous task's completed write probe.
 
 Tested commands and evidence are recorded in `docs/development.md` and
-`tasks/001-access-and-repository.md` as checks complete. Public CI must use only
+`tasks/002-suite-manager.md` as checks complete. Task 001 evidence remains historical. Public CI must use only
 synthetic fixtures and minimal built-in GitHub workflow permissions.

@@ -1,28 +1,23 @@
-# ADR 0002: Conditional Home Assistant App packaging
+# ADR 0002: Supervisor-managed Manager App
 
-Status: proposed; requires verified installation support and Task 002 approval.
+Status: accepted by the revised Task 002 assignment.
 
-## Decision
+Task 001 verified Home Assistant OS, Supervisor and amd64 test-dev access. Build
+the initial Manager in `manager/` as a Supervisor-managed App with an Ingress UI.
+Install through the actual repository/App-store path. The revised Task 002
+assignment replaces the earlier prohibition on an installable manifest.
 
-Use a Supervisor-managed Home Assistant App with an Ingress UI for the future
-Manager if the approved test-dev installation supports that deployment path.
-Do not create an installable App manifest or deploy Manager in Task 001.
+Use an explicit digest-pinned base image and reproducible published source;
+Supervisor no longer provides the obsolete implicit BUILD_FROM fallback. Test
+the actual amd64 runtime/image and advertise only supported architectures.
+Map `homeassistant_config` explicitly to a dedicated path. Persist settings,
+registry, backups and transaction journal under `/data`. Keep protection enabled,
+minimum permissions and no exposed LAN port. Authenticate every management
+request through a verified trusted Ingress boundary plus administrator identity.
+Use supported Supervisor-provided credentials, never workstation credentials.
 
-Home Assistant documents Apps as containers configured through Supervisor.
-Ingress exposes an App UI through Home Assistant and has specific gateway-access
-requirements. Home Assistant Container does not include Apps.
-([Apps](https://developers.home-assistant.io/docs/apps/),
-[Ingress](https://developers.home-assistant.io/docs/apps/presentation/#ingress),
-[Installation types](https://www.home-assistant.io/installation/#about-installation-types))
+Installed integrations operate independently of the Manager or development Mac.
+Manager updates follow HA's normal App mechanism; modules have their own versions.
 
-## Consequences
-
-Task 001 must record installation type and access capabilities from actual
-evidence. If the required path is unavailable, report that constraint before
-selecting another architecture. Do not infer support from a hostname, a token,
-or the presence of a Supervisor permission flag.
-
-Task 002 must choose the smallest required privileges, retain App protection,
-restrict Ingress access, and avoid an additional public management port. An App
-container session is not host or hypervisor administration. Installed modules
-must remain independent of Manager availability.
+References: [App configuration](https://developers.home-assistant.io/docs/apps/configuration/)
+and [Ingress](https://developers.home-assistant.io/docs/apps/presentation/#ingress).
