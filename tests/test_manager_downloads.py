@@ -1,6 +1,7 @@
 """No-network HTTPS boundary, archive abuse and resource-limit tests."""
 
 import hashlib
+import http.client
 import io
 import socket
 import stat
@@ -211,6 +212,52 @@ class DownloadTests(unittest.TestCase):
         with patch("hahapent.downloads.time.monotonic", return_value=1):
             with self.assertRaisesRegex(ManagerError, "download_too_large"):
                 budget.makefile("rb").read(10)
+
+    def test_real_http_response_body_and_socket_lifetimes(self):
+        # Use Python's real HTTP parser, with only its wire socket synthetic.
+        # A body larger than the header buffer exposes early-close regressions.
+        body = b"versioned-asset" * 2000
+        for connection_header in ("keep-alive", "close"):
+            with self.subTest(connection_header=connection_header):
+                wire = (
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: {}\r\n\r\n".format(
+                        len(body), connection_header
+                    ).encode()
+                    + body
+                )
+                streams = []
+
+                class Wire:
+                    def __init__(self):
+                        self.content = io.BytesIO(wire)
+                        self.closed = False
+                        streams.append(self)
+
+                    def close(self):
+                        self.closed = True
+
+                    def settimeout(self, _value):
+                        if self.closed:
+                            raise OSError(9, "synthetic closed socket")
+
+                    def recv(self, count):
+                        if self.closed:
+                            raise OSError(9, "synthetic closed socket")
+                        return self.content.read(min(count, 2048))
+
+                    def send(self, value):
+                        return len(value)
+
+                class Connection(http.client.HTTPConnection):
+                    def __init__(self, host, _address, timeout):
+                        super().__init__(host, timeout=timeout)
+
+                    def connect(self):
+                        self.sock = _BudgetSocket(Wire(), self.deadline, self.byte_limit)
+
+                downloader = Downloader(resolver=resolver, connection_factory=Connection)
+                self.assertEqual(downloader.download(URL, max_bytes=len(body)), body)
+                self.assertTrue(streams[0].closed)
 
     def test_socket_connections_pin_ip_and_keep_certificate_validation_and_sni(self):
         class Stream:

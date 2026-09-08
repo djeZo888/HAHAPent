@@ -105,7 +105,8 @@ class _BudgetReader(io.RawIOBase):
         return len(data)
 
     def close(self):
-        self.stream.close()
+        if not self.closed:
+            self.stream.reader_closed()
         super().close()
 
 
@@ -114,6 +115,21 @@ class _BudgetSocket:
 
     def __init__(self, stream, deadline, byte_limit):
         self.stream, self.deadline, self.remaining = stream, deadline, byte_limit
+        self._readers = 0
+        self._closed = False
+
+    def close(self):
+        # HTTPConnection closes its reference for Connection: close responses
+        # before HTTPResponse consumes the body. Its reader retains the socket.
+        if not self._readers and not self._closed:
+            self.stream.close()
+            self._closed = True
+
+    def reader_closed(self):
+        self._readers -= 1
+        # Connections are one-request-only; release resources when the final
+        # response reader closes, even for a server's keep-alive response.
+        self.close()
 
     def _timeout(self):
         remaining = self.deadline - time.monotonic()
@@ -141,6 +157,7 @@ class _BudgetSocket:
     def makefile(self, mode, *args, **kwargs):
         if mode != "rb":
             raise ManagerError("download_failed")
+        self._readers += 1
         return io.BufferedReader(_BudgetReader(self))
 
     def __getattr__(self, name):
@@ -225,8 +242,6 @@ class Downloader:
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         raise ManagerError("download_timeout")
-                    if getattr(connection, "sock", None) is not None:
-                        connection.sock.settimeout(min(15, remaining))
                     block = response.read(min(65536, max_bytes + 1 - total))
                     if not block:
                         break
