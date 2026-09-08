@@ -33,6 +33,11 @@ Updates and removal retain recovery code in the App's persistent `/data`. Use
 Home Assistant configuration migrations, user configuration, or device settings.
 Apply the displayed Core restart requirement before checking the running version.
 
+Uninstall retains a private code backup and a **Restore removed code** entry for
+recovery. That entry may keep a conservative restart reminder after removal.
+It is not an installed integration or a native configuration entry; restoring
+its code requires your explicit action. Keep the backup when recovery may be needed.
+
 If the App restarts during a change, its persistent transaction journal is used
 to recover a consistent filesystem state. If Home Assistant cannot start after
 installing code, use your existing protected Terminal & SSH recovery channel and
@@ -44,6 +49,8 @@ The App mounts Home Assistant configuration at `/homeassistant`, which is distin
 from other Apps' `/config` mounts. Settings, ownership records, transactions, and
 code backups live in `/data` and survive App restarts. Home Assistant App backups
 use a cold backup so these files are captured while the Manager is stopped.
+The normal App update from 0.1.0 to 0.1.1 was verified to preserve this state.
+Version 0.1.1 supports clean Supervisor stop with a 30-second shutdown window.
 
 # Limits
 

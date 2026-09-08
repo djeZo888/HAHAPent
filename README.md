@@ -10,12 +10,18 @@ installation, updates, removal, and code recovery.
 | Task | Scope | Status |
 | --- | --- | --- |
 | [001](tasks/001-access-and-repository.md) | Access and repository bootstrap | Complete; historical evidence retained |
-| [002](tasks/002-suite-manager.md) | Installable Suite Manager and safe module lifecycle | Implementation present; acceptance and release results in the task report |
+| [002](tasks/002-suite-manager.md) | Installable Suite Manager and safe module lifecycle | Complete; tested release 0.1.1 installed and final cleanup verified |
 | [003](tasks/003-led-integration.md) | Aquarius Plant Plus60 / AMled integration | Not started; separate authorization and owner details required |
 
-The initial Manager release is version `0.1.1`, targets amd64, and exposes no LAN management
-port. The normal catalog remains empty; a separate device-free A/B integration
+[Released Manager 0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/v0.1.1) targets amd64 and exposes no LAN management port.
+The normal catalog remains empty; a separate device-free A/B integration
 supports acceptance testing. License selection is pending.
+
+The real Ingress lifecycle exercised installation, native setup, update, rollback,
+native removal, and code uninstall. The App also updated from `0.1.0` to `0.1.1`
+through Home Assistant's normal store while retaining manager state. The fixture
+continued running while the Manager was stopped; see the task report for the
+exact test scope and final release record.
 
 Start with [installation and use](docs/installation.md) and the
 [App guide](manager/DOCS.md). The [Task 002 report](tasks/002-suite-manager.md)

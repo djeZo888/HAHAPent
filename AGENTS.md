@@ -1,15 +1,13 @@
 # HAHAPent project instructions
 
 ## Current scope
-Task 001 is complete. The revised Task 002 assignment explicitly authorizes
-implementing, installing, starting/stopping/restarting and testing HAHAPent
-Suite Manager on the protected profile's test-dev HA, including the complete
-lifecycle of a device-free test integration through the real Ingress interface.
-Necessary HA Core restarts are authorized only after the startup/KNX preflight
-and current encrypted backup/decryption checks in the runbook. Do not ask for
-routine approval already granted by that assignment. Stop a restart if unsafe
-physical effects cannot be excluded and report the concrete blocker.
-Task 003 (aquarium LED integration) remains unauthorized and awaits owner details.
+Tasks 001 and 002 are complete. Manager 0.1.1 is installed and verified on
+protected test-dev; its release and acceptance evidence are in
+`tasks/002-suite-manager.md`. Task 002's deployment/Core restart authorization
+was specific to that completed device-free lifecycle. Future deployment,
+integration or Core restart work must follow the current user's authorization
+and the runbook; do not infer a blanket operational grant from prior tests.
+Task 003 (aquarium LED integration) awaits owner details and authorization.
 Do not regenerate credentials or repeat bootstrap. License selection is pending.
 
 ## Credentials and privacy
@@ -34,7 +32,7 @@ Use only the exact repository and host selected by the protected profile.
 Preserve KNX, existing integrations, automations, App keys/options, and remote
 history. No intentional device controls, production access, network scans,
 Proxmox administration, Supervisor/OS/VM restarts, or firmware upgrades.
-Task 002 permits necessary Core restarts only after the documented safety gate.
+Authorized Core restarts require the documented startup/KNX and backup safety gate.
 Before deployment take a fresh encrypted backup, download it privately, retain
 its recovery key and verify isolated decryption/readability where supported.
 Do not restore over live HA merely as a test. Reuse Terminal & SSH unchanged.

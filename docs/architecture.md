@@ -21,6 +21,11 @@ persistent manager state. It exposes no LAN port, retains protection mode, and
 requests only `homeassistant_api`. The Supervisor-provided credential accesses
 the internal Core proxy; workstation credentials never enter the App.
 
+Normal App updates preserve `/data`. Version 0.1.1 handles Supervisor stop
+gracefully; the App's 30-second shutdown window accommodates its bounded drain.
+Hosted image checks and the live 0.1.0-to-0.1.1 App update are recorded separately
+in the Task 002 evidence.
+
 Every management request must arrive from the trusted Ingress gateway and identify
 an administrator verified through Home Assistant. Mutations also require the
 expected same-origin request headers. Forwarded peer headers and sidebar
@@ -75,11 +80,20 @@ journal, filesystem swaps, and prior-code backups. Recovery handles interrupted
 operations; removal is blocked while native HA configuration entries remain.
 The Manager does not edit `.storage` or delete user configuration.
 
+After uninstall, the installed record and owned integration directory are gone,
+while a removed-code recovery record and private backup remain. The recovery
+section may retain a conservative restart reminder; this describes the removed
+code operation and does not imply installed code or a native configuration entry.
+Restoring that retained code requires an explicit recovery action.
+
 The interface distinguishes files installed, restart pending, and configured or
 loaded state. Rollback restores code, not HA configuration migrations or device
 settings. Necessary test-dev Core restarts follow the current backup and startup
 safety gate in the runbook; the Manager does not restart Core automatically.
-Actual recovery and live lifecycle results are recorded in
+The real Ingress acceptance exercised A installation and native setup, B update,
+A rollback, configured-removal blocking, native entry removal, and code uninstall.
+The version sensor remained loaded with the Manager stopped. Exact restart,
+cleanup, backup, and release evidence is recorded in
 [Task 002](../tasks/002-suite-manager.md), separately from synthetic tests.
 
 ## Private operational data

@@ -114,23 +114,37 @@ After each push, independently verify the actual remote commit and the completed
 CI conclusion for that commit. Queued or running CI is not a passing result.
 Never force-push or rewrite shared history.
 
-## Task 002 implementation checkpoint
+## Task 002 release-code verification
 
-At the assembled source checkpoint on 2026-09-08, the coordinator confirmed the
-following results. These results describe local source validation; hosted image
-and live acceptance were still pending at this checkpoint. Their final outcomes
-and release identifiers are maintained in [Task 002](../tasks/002-suite-manager.md).
+The coordinator confirmed the following results for Manager 0.1.1 and release-code
+commit `81f4e2327d837409330032f505df52f1bb67fa26`. The completed
+[hosted run](https://github.com/djeZo888/HAHAPent/actions/runs/34278506135)
+includes the actual amd64 image. Final cleanup/restart evidence and publication
+verification are maintained in [Task 002](../tasks/002-suite-manager.md); the
+published release is [v0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/v0.1.1).
 
 | Check | Result | Evidence scope |
 | --- | --- | --- |
-| Unit tests | `PASS` | 191 synthetic tests on Python 3.9.6; assembled coordinator run |
+| Unit tests | `PASS` | 195 synthetic tests on Python 3.9.6; assembled coordinator run |
 | Ruff | `PASS` | Assembled repository Python lint |
 | Catalog validation | `PASS` | Released v1 metadata and original empty-draft compatibility |
 | App bundle drift | `PASS` | Committed schemas and normal catalog match canonical root files |
 | Runtime dependency hashes | `PASS` | All seven pinned Python 3.13/Linux amd64 wheels downloaded with hash verification |
-| Hosted amd64 App image | `NOT_TESTED` | Pending at this local checkpoint; use the completed CI result in Task 002 |
-| Live App/Ingress lifecycle | `NOT_TESTED` | Pending at this local checkpoint; coordinator-owned test-dev acceptance |
-| Final Manager release | `NOT_TESTED` | Pending at this local checkpoint; source/artifact/public-download verification required |
+| Hosted amd64 App image | `PASS` | Completed run above: image build, imports, negative HTTP authorization, engine lifecycle and persistence |
+| App repository/store installation | `PASS` | 0.1.0 installed through the normal repository and App store path |
+| Real Ingress and native HA lifecycle | `PASS` | Install/configure A 0.1.0, update B 0.2.0, Core-loaded version checks, rollback A, native entry removal and code uninstall |
+| Configured uninstall guard | `PASS` | Code removal blocked until the native HA configuration entry was removed |
+| Manager independence | `PASS` | Fixture sensor remained loaded while the Manager was stopped |
+| Normal App update | `PASS` | 0.1.0 to 0.1.1 retained settings, registry and code backups |
+| Graceful App stop | `PASS` | 0.1.1 reached Supervisor's clean stopped state |
+| Literal developer-computer power-off | `NOT_TESTED` | No physical Mac power-off test was performed |
+| Full Home Assistant restore | `NOT_TESTED` | No restore over the live environment was performed |
+
+Uninstall removed the owned fixture code after native entry deletion. Its retained
+code backup and conservative recovery restart reminder are intentional recovery
+state, not an installed fixture or configuration entry. Backup readability,
+post-cleanup Core/App restart checks, and the final KNX baseline are documented
+in the coordinator's Task 002 report rather than inferred from these checks.
 
 ## Task 001 verification record (historical)
 
