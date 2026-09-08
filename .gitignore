@@ -38,6 +38,11 @@ handoffs/
 *handoff*.txt
 *handoff*.md
 HAHAPent_Task_*
+device.local.json
+private_evidence/
+*.xapk
+*.apk
+*.dex
 # Local build/tool state
 .venv/
 __pycache__/
