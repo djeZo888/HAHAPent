@@ -8,7 +8,11 @@ a document's `$schema` never causes a network request.
 Canonical schemas and defaults are in `schemas/`. The Supervisor build context
 contains byte-identical schema/catalog copies in `manager/`, maintained by
 `python tooling/sync_manager_bundle.py`; CI checks for drift. The normal
-`hahapent.json` is deliberately empty until a real built-in module is approved.
+`hahapent.json` includes the explicitly read-only Aquarius prerelease candidate;
+its description and module documentation identify the blocked control/lifecycle work.
+Manager 0.1.1 reads this catalog from its installed image, so publishing a new
+canonical catalog does not update that installed copy. An authorized App update
+or future supported built-in refresh capability is needed for delivery.
 The device-free Task 002 fixture has a separate catalog and explicit test-mode
 switch. Enabling a catalog or adding a source never installs its code.
 
@@ -29,8 +33,7 @@ old/new fixtures and interruption tests before support is added.
 
 ## Source catalogs
 
-A released source has this shape (the actual bundled catalog is the complete
-empty example):
+A released source has this shape (this minimal example omits module entries):
 
 ```json
 {

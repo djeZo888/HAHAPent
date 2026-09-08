@@ -1,8 +1,10 @@
 # Built-in modules
 
-This directory will contain independently installable and independently
-versioned HAHAPent modules. It contains no released integrations in Task 001.
-Catalog fixtures are synthetic validation data, not installable modules.
+This directory contains independently packaged and independently versioned
+HAHAPent modules. [Aquarius Plant LED](aquarius_plant_led/README.md) is a
+read-only candidate pending successful bounded hardware controls and an installed
+catalog delivery decision. The device-free `hahapent_test` fixture is distributed
+separately from the normal catalog for Manager acceptance tests.
 
 Each future module must declare its identity, version, origin, compatibility,
 artifact integrity information, and lifecycle requirements using the versioned
@@ -18,6 +20,6 @@ An installed module must keep operating with the Manager and development Mac
 off. Additional source repositories are optional, require explicit trust, and
 must obey the same contract and ownership rules as built-in modules.
 
-The first planned device integration is recorded in
-[Task 003](../tasks/003-led-integration.md). Its device protocol and supported
-functions are not yet established.
+The first device integration is recorded in [Task 003](../tasks/003-led-integration.md).
+Its static evidence, synthetic checks, actual readback and failed bounded control
+test are distinguished; no optical validation or production installation is claimed.

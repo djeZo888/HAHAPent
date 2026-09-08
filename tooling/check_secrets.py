@@ -46,11 +46,16 @@ FORBIDDEN_NAMES = (
     "*handoff*.md",
     "*handoff*.txt",
     "HAHAPent_Task_*",
+    "device.local.json",
+    "*.xapk",
+    "*.apk",
+    "*.dex",
 )
 FORBIDDEN_DIRS = frozenset(
     {
         "secrets",
         "private",
+        "private_evidence",
         "backups",
         "logs",
         ".storage",
@@ -195,13 +200,22 @@ def main(argv: list[str] | None = None) -> int:
     try:
         values: tuple[bytes, ...] = ()
         if not args.no_private_values:
-            from tooling.access import load_private_profile
+            from tooling.access import load_private_profile, read_private_file
 
             c = load_private_profile().credentials
             values = tuple(
                 v.encode()
                 for v in (c.github_token, c.ha_token, c.ha_password, c.ha_host, c.ha_username)
             )
+            device_path = Path.home() / ".config/hahapent/devices/aquarius_plant_led.json"
+            if device_path.exists():
+                device = json.loads(read_private_file(device_path))
+                if device.get("integration_domain") != "aquarius_plant_led":
+                    raise ValueError("private_device_profile_invalid")
+                host = device.get("host")
+                if not isinstance(host, str) or not host:
+                    raise ValueError("private_device_profile_invalid")
+                values += (host.encode(),)
         findings = []
         scanned = 0
         for oid, path in objects(selected, args.outgoing):

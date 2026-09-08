@@ -7,7 +7,18 @@ protected test-dev; its release and acceptance evidence are in
 was specific to that completed device-free lifecycle. Future deployment,
 integration or Core restart work must follow the current user's authorization
 and the runbook; do not infer a blanket operational grant from prior tests.
-Task 003 (aquarium LED integration) awaits owner details and authorization.
+Task 003 revision 2 authorizes implementing and publishing Aquarius Plant LED
+through the existing Manager, HA-side read-only diagnostics, and bounded,
+reversible lamp-only tests after a trustworthy readback baseline. Initial changes
+are limited to one channel by at most five percentage points for at most ten
+seconds, with deliberate restoration; stop on unexpected changes or competing
+controllers. Necessary test-dev Core restarts require the runbook safety gate.
+No startup, polling, reconnect or reload path may write lamp state. Private target
+configuration and supplied evidence stay outside Git. Do not rebuild Manager.
+The initial bounded lamp test failed; original channels and Automatic mode were
+deliberately restored and verified. Further lamp writes are stopped pending a
+revised safe restoration plan and resolved transport/firmware behavior. The
+published candidate must remain read-only with no enabled write profiles.
 Do not regenerate credentials or repeat bootstrap. License selection is pending.
 
 ## Credentials and privacy
@@ -30,7 +41,7 @@ Only the coordinator may mutate HA or merge/push Git. Subagents may implement,
 test, or review isolated assigned source files; never provide them raw secrets.
 Use only the exact repository and host selected by the protected profile.
 Preserve KNX, existing integrations, automations, App keys/options, and remote
-history. No intentional device controls, production access, network scans,
+history. No device controls outside the bounded Task 003 lamp tests, production access, network scans,
 Proxmox administration, Supervisor/OS/VM restarts, or firmware upgrades.
 Authorized Core restarts require the documented startup/KNX and backup safety gate.
 Before deployment take a fresh encrypted backup, download it privately, retain
@@ -59,6 +70,6 @@ the authorized isolated marker round trip. Test-dev credentials are never
 available to public CI. A new task must not inherit authority to mutate HA
 merely from a previous task's completed write probe.
 
-Tested commands and evidence are recorded in `docs/development.md` and
-`tasks/002-suite-manager.md` as checks complete. Task 001 evidence remains historical. Public CI must use only
+Task 003 commands and evidence are recorded in `docs/development.md` and
+`tasks/003-led-integration.md` as checks complete. Task 001 and Task 002 evidence remains historical. Public CI must use only
 synthetic fixtures and minimal built-in GitHub workflow permissions.

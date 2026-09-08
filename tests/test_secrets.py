@@ -23,6 +23,11 @@ class SecretChecks(unittest.TestCase):
             "home/.storage/core.config",
             "project.knxproj",
             "trace.pcapng",
+            "device.local.json",
+            "private_evidence/analysis.md",
+            "vendor.xapk",
+            "vendor.apk",
+            "classes.dex",
         ):
             with self.subTest(name=name):
                 self.assertIn("forbidden_path", inspect_blob(name, b"ordinary"))

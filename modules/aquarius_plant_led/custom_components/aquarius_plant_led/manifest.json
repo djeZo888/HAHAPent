@@ -1,0 +1,12 @@
+{
+  "domain": "aquarius_plant_led",
+  "name": "Aquarius Plant LED",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/djeZo888/HAHAPent/blob/main/modules/aquarius_plant_led/README.md",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}

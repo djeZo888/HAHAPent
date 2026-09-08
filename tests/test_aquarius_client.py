@@ -1,0 +1,459 @@
+"""Fault-injected synthetic TCP tests; no actual lamp validation is implied."""
+
+import asyncio
+import unittest
+from unittest.mock import patch
+
+from tests.aquarius_tcp_helpers import (
+    SYNTHETIC_PROFILES,
+    SyntheticLamp,
+    channels_reply,
+    client,
+    extended_reply,
+    protocol,
+    system_reply,
+)
+
+
+class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.lamp = SyntheticLamp()
+        port = await self.lamp.start()
+        self.client = client.AquariusClient("127.0.0.1", port, timeout=0.4)
+        self.profiles = patch.object(protocol, "VERIFIED_WRITE_PROFILES", SYNTHETIC_PROFILES)
+        self.profiles.start()
+
+    async def asyncTearDown(self):
+        await self.client.close()
+        await self.lamp.close()
+        self.profiles.stop()
+
+    async def test_startup_poll_and_reconnect_only_send_two_reads(self):
+        for _ in range(3):
+            state = await self.client.refresh()
+            self.assertEqual(state.channels, (10, 20, 30, 40, 50, 60))
+            self.assertEqual(state.system.mode_raw, 1)
+        self.assertEqual(self.lamp.frames, [protocol.SYSTEM_QUERY, protocol.CHANNEL_QUERY] * 3)
+        self.assertEqual(self.lamp.connections, 3)
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_fragmented_fa_read_response_skips_ack_and_extended_frames(self):
+        self.lamp.channel_operation = 0xFA
+        self.lamp.fragment = True
+        self.lamp.prelude = b"\xf5" + extended_reply(system_reply(255)) + b"\xf6"
+        state = await self.client.refresh()
+        self.assertEqual(state.channels, self.lamp.channels)
+        self.assertEqual(state.system.mode_raw, 1)
+
+    async def test_both_orders_preserve_other_five_channels_and_confirm_manual(self):
+        for controller in ((0x12, 0x3C), (0x14, 0x32)):
+            with self.subTest(controller=controller):
+                self.lamp.controller = controller
+                self.lamp.mode = 0
+                self.lamp.channels = (10, 20, 30, 40, 50, 60)
+                expected = await self.client.refresh()
+                state = await self.client.set_channel(2, 35, expected_state=expected)
+                self.assertEqual(state.channels, (10, 20, 35, 40, 50, 60))
+                self.assertEqual(state.system.mode_raw, 1)
+                channel_command, manual = self.lamp.writes[-2:]
+                wire = (10, 20, 40, 35, 50, 60) if controller == (0x14, 0x32) else state.channels
+                self.assertEqual(channel_command[3:9], bytes(wire))
+                self.assertEqual(manual, protocol.mode_frame(1))
+                write_events = [event for event in self.lamp.observed if event[1][2] == 0xFA]
+                self.assertGreaterEqual(write_events[-1][2] - write_events[-2][2], 0.09)
+                self.assertNotEqual(write_events[-1][0], self.lamp.observed[-1][0])
+
+    async def test_all_six_channels_and_zero_hundred_endpoints(self):
+        await self.client.refresh()
+        for index in range(6):
+            for value in (0, 100):
+                before = self.lamp.channels
+                state = await self.client.set_channel(index, value)
+                expected = list(before)
+                expected[index] = value
+                self.assertEqual(state.channels, tuple(expected))
+
+    async def test_explicit_modes_are_verified_on_fresh_read_connection(self):
+        await self.client.refresh()
+        for mode in (0, 1, 8):
+            state = await self.client.set_mode(mode)
+            self.assertEqual(state.system.mode_raw, mode)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(mode) for mode in (0, 1, 8)])
+
+    async def test_unknown_mode_is_readable_but_blocks_any_write(self):
+        self.lamp.mode = 255
+        state = await self.client.refresh()
+        self.assertEqual(state.system.mode_raw, 255)
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.client.set_channel(0, 11)
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_unverified_profile_is_readable_but_cannot_write(self):
+        self.lamp.version = (2, 6)
+        state = await self.client.refresh()
+        self.assertFalse(state.system.write_supported)
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.client.set_mode(1)
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_invalid_values_never_open_connection_or_coerce(self):
+        for value in (-1, 101, 255, True, 1.0, "10", None):
+            with self.subTest(value=value), self.assertRaises(protocol.ProtocolError):
+                await self.client.set_channel(0, value)
+        for index in (-1, 6, True, 1.0):
+            with self.subTest(index=index), self.assertRaises(protocol.ProtocolError):
+                await self.client.set_channel(index, 10)
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.set_mode(2)
+        self.assertEqual(self.lamp.connections, 0)
+
+    async def test_first_write_requires_a_successful_refresh(self):
+        with self.assertRaises(client.RefreshRequiredError):
+            await self.client.set_channel(0, 11)
+        self.assertEqual(self.lamp.connections, 0)
+
+    async def test_prewrite_competing_controller_aborts_without_overriding(self):
+        expected = await self.client.refresh()
+        self.lamp.channels = (10, 20, 30, 40, 51, 60)
+        with self.assertRaises(client.ConflictError):
+            await self.client.set_channel(0, 11, expected_state=expected)
+        self.assertEqual(self.lamp.writes, [])
+        self.assertIsNone(self.client.last_state)
+
+    async def test_postwrite_competing_controller_aborts_without_restore_or_retry(self):
+        await self.client.refresh()
+
+        async def interfere(connection, frame):
+            if connection == 3 and frame == protocol.SYSTEM_QUERY:
+                self.lamp.channels = (11, 20, 30, 40, 51, 60)
+
+        self.lamp.hook = interfere
+        with self.assertRaises(client.ConflictError):
+            await self.client.set_channel(0, 11)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertEqual(self.lamp.channels[4], 51)
+        with self.assertRaises(client.RefreshRequiredError):
+            await self.client.set_channel(0, 10)
+        self.assertEqual(len(self.lamp.writes), 2)
+
+    async def test_profile_change_during_write_is_a_conflict(self):
+        await self.client.refresh()
+
+        async def interfere(connection, frame):
+            if connection == 3 and frame == protocol.SYSTEM_QUERY:
+                self.lamp.version = (2, 6)
+
+        self.lamp.hook = interfere
+        with self.assertRaises(client.ConflictError):
+            await self.client.set_channel(0, 11)
+
+    async def test_write_echo_and_ack_cannot_confirm_failed_device_write(self):
+        self.lamp.channel_operation = 0xFA
+        self.lamp.ignore_writes = True
+        self.lamp.echo_writes = True
+        await self.client.refresh()
+        with self.assertRaises(client.ConflictError):
+            await self.client.set_channel(0, 11)
+        self.assertEqual(self.lamp.channels[0], 10)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertEqual(self.lamp.connections, 3)
+
+    async def test_concurrent_updates_serialize_entire_read_modify_write(self):
+        await self.client.refresh()
+        first, second = await asyncio.gather(
+            self.client.set_channel(0, 11), self.client.set_channel(1, 21)
+        )
+        self.assertEqual(first.channels, (11, 20, 30, 40, 50, 60))
+        self.assertEqual(second.channels, (11, 21, 30, 40, 50, 60))
+        self.assertEqual(
+            self.lamp.frames,
+            [protocol.SYSTEM_QUERY, protocol.CHANNEL_QUERY]
+            + [
+                protocol.SYSTEM_QUERY,
+                protocol.CHANNEL_QUERY,
+                protocol.channel_write_frame(first.channels),
+                protocol.mode_frame(1),
+                protocol.SYSTEM_QUERY,
+                protocol.CHANNEL_QUERY,
+            ]
+            + [
+                protocol.SYSTEM_QUERY,
+                protocol.CHANNEL_QUERY,
+                protocol.channel_write_frame(second.channels),
+                protocol.mode_frame(1),
+                protocol.SYSTEM_QUERY,
+                protocol.CHANNEL_QUERY,
+            ],
+        )
+
+    async def test_stale_concurrent_explicit_state_is_a_conflict(self):
+        expected = await self.client.refresh()
+        results = await asyncio.gather(
+            self.client.set_channel(0, 11, expected),
+            self.client.set_channel(1, 21, expected),
+            return_exceptions=True,
+        )
+        self.assertIsInstance(results[0], client.DeviceState)
+        self.assertIsInstance(results[1], client.ConflictError)
+        self.assertEqual(self.lamp.channels, (11, 20, 30, 40, 50, 60))
+
+    async def test_failed_write_and_queued_write_are_never_replayed(self):
+        await self.client.refresh()
+        self.lamp.ignore_writes = True
+        results = await asyncio.gather(
+            self.client.set_channel(0, 11), self.client.set_channel(1, 21), return_exceptions=True
+        )
+        self.assertIsInstance(results[0], client.ConflictError)
+        self.assertIsInstance(results[1], client.RefreshRequiredError)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.lamp.ignore_writes = False
+        await self.client.refresh()
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertEqual(self.lamp.channels, (10, 20, 30, 40, 50, 60))
+        state = await self.client.set_channel(0, 12)
+        self.assertEqual(state.channels[0], 12)
+
+    async def test_query_echo_is_not_a_valid_device(self):
+        self.lamp.response_override = lambda frame, response: frame
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.refresh()
+        self.assertEqual(self.lamp.frames, [protocol.SYSTEM_QUERY])
+
+    async def test_valid_system_plus_channel_query_echo_cannot_supply_false_zeroes(self):
+        self.lamp.response_override = (
+            lambda frame, response: frame if frame == protocol.CHANNEL_QUERY else response
+        )
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.refresh()
+        self.assertIsNone(self.client.last_state)
+        with self.assertRaises(client.RefreshRequiredError):
+            await self.client.set_channel(0, 11)
+        self.assertEqual(self.lamp.writes, [])
+        self.assertEqual(self.lamp.channels, (10, 20, 30, 40, 50, 60))
+
+    async def test_channel_query_echo_during_prewrite_never_wipes_other_channels(self):
+        await self.client.refresh()
+        self.lamp.response_override = (
+            lambda frame, response: frame if frame == protocol.CHANNEL_QUERY else response
+        )
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.set_channel(0, 11)
+        self.assertEqual(self.lamp.writes, [])
+        self.assertEqual(self.lamp.channels, (10, 20, 30, 40, 50, 60))
+
+    async def test_unambiguous_fa_all_off_response_preserves_zero_baseline(self):
+        self.lamp.channel_operation = 0xFA
+        self.lamp.channels = (0, 0, 0, 0, 0, 0)
+        state = await self.client.refresh()
+        self.assertEqual(state.channels, (0, 0, 0, 0, 0, 0))
+        state = await self.client.set_channel(0, 1)
+        self.assertEqual(state.channels, (1, 0, 0, 0, 0, 0))
+
+    async def test_ambiguous_fc_all_off_response_fails_closed(self):
+        self.lamp.channel_operation = 0xFC
+        self.lamp.channels = (0, 0, 0, 0, 0, 0)
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.refresh()
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_stale_channel_frame_before_query_is_rejected_at_every_split(self):
+        stale = channels_reply((1, 2, 3, 4, 5, 6), operation=0xFA)
+        fresh = channels_reply(operation=0xFA)
+
+        class ScriptedReader:
+            def __init__(self, chunks):
+                self.chunks = list(chunks)
+
+            async def read(self, size):
+                return self.chunks.pop(0) if self.chunks else b""
+
+        class ScriptedWriter:
+            def __init__(self):
+                self.frames = []
+
+            def write(self, frame):
+                self.frames.append(frame)
+
+            async def drain(self):
+                pass
+
+            def close(self):
+                pass
+
+            async def wait_closed(self):
+                pass
+
+        for split in range(len(stale) + 1):
+            with self.subTest(split=split):
+                self.client._reader = ScriptedReader(
+                    [system_reply() + stale[:split], stale[split:] + fresh]
+                )
+                self.client._writer = ScriptedWriter()
+                self.client._decoder = protocol.StreamDecoder()
+                with self.assertRaises(protocol.ProtocolError):
+                    await self.client._read_state()
+                self.assertEqual(self.client._writer.frames, [protocol.SYSTEM_QUERY])
+
+    async def test_unsolicited_status_arriving_during_query_pause_is_rejected(self):
+        system_seen = asyncio.Event()
+
+        async def observe(connection, frame):
+            if frame == protocol.SYSTEM_QUERY:
+                system_seen.set()
+
+        self.lamp.hook = observe
+        refresh = asyncio.create_task(self.client.refresh())
+        await asyncio.wait_for(system_seen.wait(), 1)
+        await asyncio.sleep(0.02)
+        for writer in tuple(self.lamp.writers):
+            writer.write(channels_reply((1, 2, 3, 4, 5, 6), operation=0xFA))
+            await writer.drain()
+        with self.assertRaises(protocol.ProtocolError):
+            await refresh
+        self.assertEqual(self.lamp.frames, [protocol.SYSTEM_QUERY])
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_partial_unsolicited_frame_at_query_boundary_fails_closed(self):
+        system_seen = asyncio.Event()
+
+        async def observe(connection, frame):
+            if frame == protocol.SYSTEM_QUERY:
+                system_seen.set()
+
+        self.lamp.hook = observe
+        refresh = asyncio.create_task(self.client.refresh())
+        await asyncio.wait_for(system_seen.wait(), 1)
+        await asyncio.sleep(0.02)
+        for writer in tuple(self.lamp.writers):
+            writer.write(channels_reply(operation=0xFA)[:7])
+            await writer.drain()
+        with self.assertRaises(protocol.ProtocolError):
+            await refresh
+        self.assertEqual(self.lamp.frames, [protocol.SYSTEM_QUERY])
+
+    async def test_ack_and_extended_payload_during_pause_do_not_supply_channel_status(self):
+        system_seen = asyncio.Event()
+
+        async def observe(connection, frame):
+            if frame == protocol.SYSTEM_QUERY:
+                system_seen.set()
+
+        self.lamp.hook = observe
+        refresh = asyncio.create_task(self.client.refresh())
+        await asyncio.wait_for(system_seen.wait(), 1)
+        await asyncio.sleep(0.02)
+        for writer in tuple(self.lamp.writers):
+            writer.write(b"\xf5" + extended_reply(channels_reply((1, 2, 3, 4, 5, 6))))
+            await writer.drain()
+        state = await refresh
+        self.assertEqual(state.channels, (10, 20, 30, 40, 50, 60))
+        self.assertEqual(self.lamp.frames, [protocol.SYSTEM_QUERY, protocol.CHANNEL_QUERY])
+
+    async def test_acknowledgement_only_response_times_out_without_write(self):
+        self.lamp.response_override = lambda frame, response: b"\xf5"
+        self.client.timeout = 0.05
+        with self.assertRaises(client.AquariusError):
+            await self.client.refresh()
+        self.assertEqual(self.lamp.frames, [protocol.SYSTEM_QUERY])
+        self.assertIsNone(self.client.last_state)
+
+    async def test_eof_invalid_percentages_and_receive_flood_fail_closed(self):
+        def invalid_channel(frame, response):
+            return (
+                channels_reply((255, 0, 0, 0, 0, 0))
+                if frame == protocol.CHANNEL_QUERY
+                else response
+            )
+
+        self.lamp.response_override = invalid_channel
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.refresh()
+        self.lamp.response_override = lambda frame, response: b"x" * (client.MAX_RECEIVED_BYTES + 1)
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.refresh()
+        self.lamp.response_override = None
+
+        async def eof(connection, frame):
+            for writer in tuple(self.lamp.writers):
+                writer.close()
+
+        self.lamp.hook = eof
+        with self.assertRaises(client.AquariusError):
+            await self.client.refresh()
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_cancel_during_manual_pause_does_not_send_mode_or_restore(self):
+        await self.client.refresh()
+        write_seen = asyncio.Event()
+
+        async def observe(connection, frame):
+            if frame[1:3] == b"\xe2\xfa":
+                write_seen.set()
+
+        self.lamp.hook = observe
+        pending = asyncio.create_task(self.client.set_channel(0, 11))
+        await asyncio.wait_for(write_seen.wait(), 1)
+        pending.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await pending
+        await asyncio.sleep(0.11)
+        self.assertEqual(self.lamp.writes, [protocol.channel_write_frame((11, 20, 30, 40, 50, 60))])
+        with self.assertRaises(client.RefreshRequiredError):
+            await self.client.set_channel(0, 10)
+        await self.client.refresh()
+        self.assertEqual(len(self.lamp.writes), 1)
+
+    async def test_unload_cancels_stalled_transaction_and_permanently_closes(self):
+        query_seen = asyncio.Event()
+
+        async def observe(connection, frame):
+            query_seen.set()
+
+        self.lamp.hook = observe
+        self.lamp.response_override = lambda frame, response: None
+        pending = asyncio.create_task(self.client.refresh())
+        await asyncio.wait_for(query_seen.wait(), 1)
+        await asyncio.wait_for(self.client.close(), 1)
+        self.assertTrue(pending.cancelled())
+        with self.assertRaises(client.AquariusError):
+            await self.client.refresh()
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_cancel_during_socket_cleanup_invalidates_state_and_active_task(self):
+        previous = await self.client.refresh()
+        waiting = asyncio.Event()
+
+        class WaitingWriter:
+            def close(self):
+                pass
+
+            async def wait_closed(self):
+                waiting.set()
+                await asyncio.Event().wait()
+
+        self.client._writer = WaitingWriter()
+        with patch.object(self.client, "_connected_operation", return_value=previous):
+            pending = asyncio.create_task(self.client.refresh())
+            await asyncio.wait_for(waiting.wait(), 1)
+            pending.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await pending
+        self.assertIsNone(self.client.last_state)
+        self.assertIsNone(self.client._active_task)
+        self.assertTrue(self.client._needs_refresh)
+        with self.assertRaises(client.RefreshRequiredError):
+            await self.client.set_channel(0, 11)
+
+    async def test_constructor_rejects_unbounded_timeout_and_invalid_endpoint(self):
+        for timeout in (0, -1, True, float("inf"), float("nan")):
+            with self.subTest(timeout=timeout), self.assertRaises(ValueError):
+                client.AquariusClient("127.0.0.1", timeout=timeout)
+        for port in (0, 65536, True, 8080.0):
+            with self.subTest(port=port), self.assertRaises(ValueError):
+                client.AquariusClient("127.0.0.1", port)
+        with self.assertRaises(ValueError):
+            client.AquariusClient("")
+
+
+if __name__ == "__main__":
+    unittest.main()
