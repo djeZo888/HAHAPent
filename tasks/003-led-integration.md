@@ -126,6 +126,24 @@ preservation and a three-second admitted-action deadline covering debounce and
 lock queues. All profiles remain read-only. Local synthetic checks: **304 unit
 tests PASS**, **47 native HA tests PASS**, Ruff/catalog/bundle checks PASS.
 
+## Native setup serialization repair
+
+Actual native HA setup for the unchanged 0.1.0 artifact returned HTTP 500 before
+showing the controller form. Private Core diagnostics identified HA's inability
+to serialize the `_normalize_host` callable inside the form schema. Direct
+FlowManager tests had not exercised the HTTP response serializer.
+
+The unpublished 0.1.1 source now exposes a declarative string field and performs
+normalization/validation after submission, retaining normalized duplicate checks
+and a clear `invalid_host` field error. Six regression cases use HA's actual
+`FlowManagerIndexView._prepare_result_json` for initial/reconfigure forms and
+invalid-host responses. **14 config-flow tests PASS; 53 total native HA tests
+PASS; Ruff PASS.** These are synthetic framework checks; the repaired artifact
+must still pass the real native UI after delivery. The original 0.1.0 release
+remains unchanged. Read-only lifecycle order will update its installed code to
+0.1.1 before native configuration, then verify rollback using that existing
+read-only configuration before removal.
+
 ## Historical revision-2 baseline and authorization
 
 Task 002 is complete at main commit `3ce396c27296e33473dbbbeebe68bff034d8203d`.
