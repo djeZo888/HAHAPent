@@ -1,0 +1,12 @@
+{
+  "domain": "example_domain",
+  "name": "Example independent integration",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/example-owner/example-repository/blob/main/modules/example-module/README.md",
+  "integration_type": "helper",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,21 @@
+# Supervisor builds this directory alone. Include only reviewed runtime sources.
+*
+!Dockerfile
+!requirements.txt
+!run.sh
+!THIRD_PARTY_NOTICES.md
+!hahapent.json
+!test-catalog.json
+!schemas/
+!schemas/*.schema.json
+!hahapent/
+!hahapent/**
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.DS_Store
+**/.env*
+**/credentials*
+**/*.pem
+**/*.key
+**/secrets*

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "draft",
+  "status": "released",
   "source": {
     "id": "synthetic-source",
     "name": "Synthetic offline fixture",
@@ -31,16 +31,29 @@
         "revision": "0000000000000000000000000000000000000000",
         "source_path": "modules/synthetic-helper"
       },
-      "restart": {"home_assistant": "unknown", "manager": "not_required"}
+      "restart": {
+        "home_assistant": "unknown",
+        "manager": "not_required"
+      },
+      "description": "Synthetic fixture for offline validation.",
+      "documentation_url": "https://example.invalid/synthetic/docs",
+      "minimum_manager_version": "0.1.0",
+      "required_features": []
     },
     {
       "id": "synthetic-consumer",
       "name": "Synthetic consumer",
       "integration_domain": "synthetic_consumer",
       "version": "2.0.0-rc.1",
-      "home_assistant": {"min_version": "2026.2.0"},
+      "home_assistant": {
+        "min_version": "2026.2.0"
+      },
       "dependencies": [
-        {"source_id": "synthetic-source", "module_id": "synthetic-helper", "version": "1.2.3"}
+        {
+          "source_id": "synthetic-source",
+          "module_id": "synthetic-helper",
+          "version": "1.2.3"
+        }
       ],
       "artifact": {
         "url": "https://example.invalid/synthetic/consumer-2.0.0-rc.1.zip",
@@ -56,7 +69,16 @@
         "revision": "1111111111111111111111111111111111111111",
         "source_path": "modules/synthetic-consumer"
       },
-      "restart": {"home_assistant": "required", "manager": "not_required"}
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "description": "Synthetic fixture for offline validation.",
+      "documentation_url": "https://example.invalid/synthetic/docs",
+      "minimum_manager_version": "0.1.0",
+      "required_features": []
     }
-  ]
+  ],
+  "minimum_manager_version": "0.1.0",
+  "required_features": []
 }

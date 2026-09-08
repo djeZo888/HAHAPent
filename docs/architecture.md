@@ -7,22 +7,26 @@ catalog contract, tooling, and task evidence. The Manager and each module have
 independent versions and release artifacts. A suite version must not force every
 module to update.
 
-Task 001 establishes these boundaries and validates synthetic catalog inputs.
-It does not implement downloads, installation, updates, removal, rollback, or
-device communication.
+Task 001 established access and repository boundaries. Task 002 implements the
+Manager's catalog, installation, update, removal, and recovery paths. Its
+device-free fixture exercises the native integration lifecycle; aquarium device
+communication remains outside the authorized scope.
 
-## Planned runtime
+## Runtime
 
-The Manager is proposed as a Supervisor-managed Home Assistant App with Ingress,
-subject to confirming the approved test-dev installation supports Apps. Current
-Home Assistant documentation distinguishes Home Assistant OS, which supports
-Apps, from Home Assistant Container, which does not.
-([Installation types](https://www.home-assistant.io/installation/#about-installation-types))
+The Manager is a Supervisor-managed App with Ingress, an explicit digest-pinned
+Python 3.13 image, and an amd64 build target. Its configuration maps Home
+Assistant's configuration directory to `/homeassistant` and uses `/data` for
+persistent manager state. It exposes no LAN port, retains protection mode, and
+requests only `homeassistant_api`. The Supervisor-provided credential accesses
+the internal Core proxy; workstation credentials never enter the App.
 
-Ingress provides access to an App UI through Home Assistant. Task 002 must
-implement the documented access restrictions and avoid exposing an additional
-public management port. This design is proposed, not a tested deployment.
-([Ingress requirements](https://developers.home-assistant.io/docs/apps/presentation/#ingress))
+Every management request must arrive from the trusted Ingress gateway and identify
+an administrator verified through Home Assistant. Mutations also require the
+expected same-origin request headers. Forwarded peer headers and sidebar
+visibility cannot establish authorization. See
+[Ingress requirements](https://developers.home-assistant.io/docs/apps/presentation/#ingress)
+and the implemented App configuration in `manager/config.yaml`.
 
 Installed custom integrations run in Home Assistant. Their device communication
 and normal operation must not depend on the Manager, an external repository
@@ -32,7 +36,7 @@ and lifecycle metadata; it is not a runtime device bridge.
 ## Catalog and trust
 
 The versioned catalog contract is shared by the built-in source and optional
-extra sources. Each future entry identifies a module, its version and origin,
+extra sources. Each entry identifies a module, its version and origin,
 compatibility limits, a release artifact, integrity information, and the
 expected integration domain. Unknown schema versions and invalid entries must
 fail closed. Exact fields are defined by the checked-in contract, not by this
@@ -44,10 +48,19 @@ remain distinguishable. Source changes, origin conflicts, incompatible releases,
 invalid paths, and artifact validation failures must block the affected
 operation before installed files change.
 
-The later installer must validate downloaded bytes, extract into a staging
-directory with path and link checks, then apply only a validated module. An
-integrity field does not itself prove that an origin is trustworthy. These are
-Task 002 requirements; Task 001 catalog validation is not an installer proof.
+Downloads use bounded HTTPS requests with certificate verification and restricted
+GitHub release-asset redirects. The engine checks the digest before extraction,
+rejects unsafe paths, links and identity mismatches, and stages the selected
+integration before replacement. Package-supplied install scripts are never run.
+Checksums verify bytes; they do not establish publisher trust.
+
+The released catalog remains `schema_version: 1` and safely reads the original
+empty draft. Settings and installed-state documents have independent v1 schemas;
+module and Manager software versions are separate. Unknown optional extension
+data is retained without changing required semantics. Unsupported future schemas
+are rejected without overwriting stored data. The canonical root schemas and
+normal catalog have committed copies in the App build context; a sync tool and
+drift check keep them aligned. Runtime uses bundled schemas only.
 
 ## Ownership and recovery
 
@@ -56,11 +69,18 @@ the same domain is not owned merely because a catalog entry matches it. Never
 overwrite or remove Core-, HACS-, or manually managed integrations. Preserve
 unrelated files and user configuration on every lifecycle path.
 
-Task 002 must record the prior owned version and a usable rollback artifact
-before updates, handle interrupted operations, and verify recovery using
-device-free fixtures. Reload and restart requirements must be disclosed before
-changes. Existing KNX integrations and automations make an approved maintenance
-window and recovery plan necessary for any later Core restart.
+The persistent registry records installed ownership independently of catalog
+availability. Operations are serialized and use staged code, a transaction
+journal, filesystem swaps, and prior-code backups. Recovery handles interrupted
+operations; removal is blocked while native HA configuration entries remain.
+The Manager does not edit `.storage` or delete user configuration.
+
+The interface distinguishes files installed, restart pending, and configured or
+loaded state. Rollback restores code, not HA configuration migrations or device
+settings. Necessary test-dev Core restarts follow the current backup and startup
+safety gate in the runbook; the Manager does not restart Core automatically.
+Actual recovery and live lifecycle results are recorded in
+[Task 002](../tasks/002-suite-manager.md), separately from synthetic tests.
 
 ## Private operational data
 
