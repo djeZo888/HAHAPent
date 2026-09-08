@@ -2,6 +2,10 @@
 
 import http.client
 import json
+import subprocess
+import sys
+import tempfile
+import textwrap
 import threading
 import time
 import unittest
@@ -169,6 +173,80 @@ class RequestContractTests(unittest.TestCase):
         error.code = "private/response-token"
         self.assertEqual(public_error(error)["code"], "operation_failed")
 
+    def test_shutdown_blocks_new_mutations_and_drains_existing_job(self):
+        release = threading.Event()
+        self.manager.install.side_effect = lambda *args: release.wait(2)
+        self.app.submit("install", {"source_id": "demo", "module_id": "demo", "version": "1.0.0"})
+        self.app.begin_shutdown()
+        try:
+            self.assertFalse(self.app.wait_for_idle(0.01))
+            with self.assertRaises(WebError) as caught:
+                self.app.submit("refresh", {})
+            self.assertEqual(caught.exception.code, "shutting_down")
+        finally:
+            release.set()
+        self.assertTrue(self.app.wait_for_idle(2))
+        self.assertEqual(self.app.job()["state"], "complete")
+
+
+class ProcessShutdownTests(unittest.TestCase):
+    def test_real_sigterm_exits_zero_and_finishes_active_synthetic_transaction(self):
+        script = textwrap.dedent("""
+            import sys
+            import time
+            from pathlib import Path
+            from manager.hahapent.server import Application, IngressServer, serve
+
+            class SyntheticManager:
+                operation = {"phase": "staging"}
+                def install(self, *args):
+                    deadline = time.monotonic() + 5
+                    while not Path(sys.argv[2]).exists():
+                        if time.monotonic() >= deadline:
+                            raise RuntimeError("synthetic job timeout")
+                        time.sleep(.01)
+                    Path(sys.argv[1]).write_text("complete")
+
+            application = Application(SyntheticManager(), object())
+            application.submit("install", {
+                "source_id": "synthetic", "module_id": "demo", "version": "1.0.0"
+            })
+            server = IngressServer(("127.0.0.1", 0), application)
+            print(server.server_port, flush=True)
+            serve(server)
+        """)
+        with tempfile.TemporaryDirectory() as directory:
+            marker = Path(directory) / "transaction-complete"
+            release = Path(directory) / "release-transaction"
+            process = subprocess.Popen(
+                [sys.executable, "-c", script, str(marker), str(release)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                port = int(process.stdout.readline())
+                connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+                connection.request("GET", "/api/status")
+                response = connection.getresponse()
+                self.assertEqual(response.status, 403)
+                response.read()
+                connection.close()
+                # Actual HTTP serving proves the production signal handlers are installed.
+                self.assertFalse(marker.exists())
+                process.terminate()
+                time.sleep(0.1)
+                self.assertIsNone(process.poll())
+                release.write_text("continue")
+                _output, error = process.communicate(timeout=5)
+                self.assertEqual(process.returncode, 0, error)
+                self.assertEqual(error, "")
+                self.assertEqual(marker.read_text(), "complete")
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.communicate(timeout=3)
+
 
 class HTTPTests(unittest.TestCase):
     def setUp(self):
@@ -277,6 +355,8 @@ class FrontendContractTests(unittest.TestCase):
         ):
             self.assertIn(action, script)
         self.assertIn("/config/integrations/dashboard/add?domain=", script)
+        self.assertIn("/config/integrations/integration/${encodeURIComponent(domain)}", script)
+        self.assertIn("Manage in HA → entry menu → Delete", script)
         self.assertIn("cannot undo", script)
         self.assertIn("Device-free test catalog", page)
         self.assertNotIn('id="test-mode" type="checkbox" checked', page)

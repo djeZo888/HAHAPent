@@ -5,7 +5,7 @@ removing, and recovering independently versioned integrations. Its interface
 opens through Home Assistant Ingress. Installed integrations run directly in
 Home Assistant and keep working while this App and the developer computer are off.
 
-The initial App targets **amd64** and requires Home Assistant **2026.9.1 or later**.
+The **0.1.1** App targets **amd64** and requires Home Assistant **2026.9.1 or later**.
 The Task 002 evidence identifies the exact release tested.
 It publishes no LAN port, keeps protection mode enabled, and uses only the
 Home Assistant API permission. Its writable Home Assistant configuration mount

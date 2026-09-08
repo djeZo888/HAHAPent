@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -23,6 +24,7 @@ ERROR_MESSAGES = {
     "invalid_request": "The request is invalid. Refresh the interface and try again.",
     "request_too_large": "The request exceeds the allowed size.",
     "busy": "Another operation is running. Wait for it to finish.",
+    "shutting_down": "Suite Manager is stopping. Reopen the interface after it starts.",
     "ha_unavailable": "Home Assistant is unavailable. Management is paused until it returns.",
     "ha_auth_unavailable": "The App cannot verify Home Assistant access. Check App permissions.",
     "ha_response_invalid": "Home Assistant returned an unexpected response. No action was taken.",
@@ -126,6 +128,17 @@ class Application:
         self.ha = ha
         self._lock = threading.Lock()
         self._job: dict = {"state": "idle"}
+        self._idle = threading.Event()
+        self._idle.set()
+        self._stopping = False
+
+    def begin_shutdown(self) -> None:
+        with self._lock:
+            self._stopping = True
+
+    def wait_for_idle(self, timeout: float) -> bool:
+        """Give an active transaction time to finish within Supervisor's stop window."""
+        return self._idle.wait(timeout)
 
     def job(self) -> dict:
         with self._lock:
@@ -170,9 +183,12 @@ class Application:
         if operation == "source_add" and body["trusted"] is not True:
             raise WebError("invalid_request")
         with self._lock:
+            if self._stopping:
+                raise WebError("shutting_down", 503)
             if self._job["state"] == "running":
                 raise WebError("busy", 409)
             self._job = {"state": "running", "operation": operation}
+            self._idle.clear()
             threading.Thread(target=self._run, args=(operation, body), daemon=True).start()
             return dict(self._job)
 
@@ -197,6 +213,7 @@ class Application:
             result = {"state": "failed", "operation": operation, "error": public_error(error)}
         with self._lock:
             self._job = result
+            self._idle.set()
 
     def state(self) -> dict:
         current = self.manager.status()
@@ -322,6 +339,36 @@ class Handler(BaseHTTPRequestHandler):
         self._dispatch(mutation=True)
 
 
+def serve(server: IngressServer) -> None:
+    """Exit normally on Supervisor SIGTERM without deadlocking serve_forever.
+
+    HTTPServer.shutdown must run on a different thread from serve_forever.
+    Bounded draining lets a normal transaction finish; a longer operation or
+    forced container kill remains recoverable through the engine's journal.
+    """
+    stopping = threading.Event()
+
+    def stop(_signum: int, _frame: Any) -> None:
+        if stopping.is_set():
+            return
+        stopping.set()
+
+        def shutdown() -> None:
+            server.application.begin_shutdown()
+            server.shutdown()
+
+        threading.Thread(target=shutdown, daemon=True).start()
+
+    previous = {signum: signal.signal(signum, stop) for signum in (signal.SIGTERM, signal.SIGINT)}
+    try:
+        server.serve_forever(poll_interval=0.2)
+    finally:
+        server.server_close()
+        server.application.wait_for_idle(20)
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+
+
 def main() -> None:
     # Imports are delayed so isolated HTTP/auth smoke tests do not need engine state.
     from .engine import Manager
@@ -334,7 +381,7 @@ def main() -> None:
         ha_adapter=ha,
         test_catalog=Path(__file__).parents[1] / "test-catalog.json",
     )
-    IngressServer(("0.0.0.0", 8099), Application(manager, ha)).serve_forever()
+    serve(IngressServer(("0.0.0.0", 8099), Application(manager, ha)))
 
 
 if __name__ == "__main__":

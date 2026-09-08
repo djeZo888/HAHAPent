@@ -152,7 +152,7 @@ function versionOf(row) { return row.version || row.installed_version; }
 function versionSort(a, b) { return b.version.localeCompare(a.version, undefined, { numeric: true }); }
 function nativeConfigLink(domain, configured) {
   return link(configured ? "Manage in HA ↗" : "Configure in HA ↗", configured
-    ? "/config/integrations/dashboard"
+    ? `/config/integrations/integration/${encodeURIComponent(domain)}`
     : `/config/integrations/dashboard/add?domain=${encodeURIComponent(domain)}`, true);
 }
 
@@ -265,12 +265,12 @@ function renderInstalled() {
         await perform("rollback", {domain, confirmed: true});
     }, "secondary", !row.rollback_available));
     actions.append(button("Uninstall", async () => {
-      if (await confirmation("Uninstall owned integration code?", "Remove this integration’s configuration entry in Home Assistant first. Only Suite Manager’s owned code is removed; unrelated files and user configuration are preserved. A backup is retained.", "Uninstall", true))
+      if (await confirmation("Uninstall owned integration code?", "Use Manage in HA, then this integration’s entry menu → Delete to remove its configuration entry first. Only Suite Manager’s owned code is removed; unrelated files and user configuration are preserved. A backup is retained.", "Uninstall", true))
         await perform("remove", {domain, confirmed: true});
     }, "secondary"));
     actions.append(nativeConfigLink(domain, configured === true));
     card.append(actions);
-    if (configured === true) card.append(el("p", "Before uninstalling, use Manage in HA to delete this integration’s config entry.", "muted"));
+    if (configured === true) card.append(el("p", "Before uninstalling: Manage in HA → entry menu → Delete. Return here to uninstall code.", "muted"));
     container.append(card);
   }
   for (const removed of removedRows) {

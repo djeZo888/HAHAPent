@@ -1,6 +1,6 @@
 # Catalog and persistent JSON contract
 
-HAHAPent 0.1.0 reads three independent JSON v1 contracts: source catalogs,
+HAHAPent 0.1.1 reads three independent JSON v1 contracts: source catalogs,
 Manager settings and the installed registry. Manager releases and integration
 versions are separate SemVer values. The Manager uses its bundled JSON Schemas;
 a document's `$schema` never causes a network request.
@@ -140,7 +140,7 @@ it are interpreted conservatively as pending. The initial release cannot prove
 a Core restart after removal, so this warning remains until code is restored
 or a future explicitly verified observation clears it; it is not a claim that
 removed code is still loaded. Paths to backups are derived solely from validated
-random IDs, never from catalog text. Backups are retained privately; v0.1.0 has
+random IDs, never from catalog text. Backups are retained privately; v0.1.x has
 no automatic backup pruning, so operators should monitor App-data free space.
 
 Every mutation takes an in-process lock and an OS file lock, validates ownership,

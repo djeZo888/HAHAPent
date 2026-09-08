@@ -76,7 +76,7 @@ class FixturePackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             fixture = build_release(root / "fixture", "b" * 40)
-            final = build_release(root / "final", "b" * 40, "v0.1.0")
+            final = build_release(root / "final", "b" * 40, "v0.1.1")
             for version in VERSIONS:
                 name = f"hahapent-test-{version}.zip"
                 self.assertEqual(
@@ -116,6 +116,30 @@ class FixturePackagingTests(unittest.TestCase):
 
 
 class ManagerBundleTests(unittest.TestCase):
+    def test_manager_release_alignment_does_not_change_frozen_fixtures(self):
+        tree = ast.parse((ROOT / "manager/hahapent/__init__.py").read_text())
+        version = next(
+            ast.literal_eval(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "__version__"
+                for target in node.targets
+            )
+        )
+        self.assertEqual(version, "0.1.1")
+        self.assertIn(f'version: "{version}"\n', (ROOT / "manager/config.yaml").read_text())
+        self.assertIn(f"ARG BUILD_VERSION={version}\n", (ROOT / "manager/Dockerfile").read_text())
+        frozen = json.loads((ROOT / "manager/test-catalog.json").read_text())
+        self.assertEqual(frozen["minimum_manager_version"], "0.1.0")
+        self.assertEqual({module["version"] for module in frozen["modules"]}, {"0.1.0", "0.2.0"})
+        self.assertTrue(
+            all(module["minimum_manager_version"] == "0.1.0" for module in frozen["modules"])
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            rebuilt = build_release(Path(temporary), frozen["modules"][0]["provenance"]["revision"])
+            self.assertEqual(rebuilt, frozen)
+
     def test_committed_runtime_bundle_matches_canonical_files(self):
         self.assertTrue(sync_bundle(check=True), "run tooling/sync_manager_bundle.py")
 
@@ -138,6 +162,12 @@ class ManagerBundleTests(unittest.TestCase):
             "type: homeassistant_config\n    read_only: false\n    path: /homeassistant", text
         )
         self.assertIn("panel_admin: true", text)
+        shutdown_window = int(
+            next(
+                line.partition(":")[2] for line in text.splitlines() if line.startswith("timeout:")
+            )
+        )
+        self.assertGreaterEqual(shutdown_window, 30)
         for forbidden in ("ports:", "host_network:", "hassio_api:", "full_access:", "privileged:"):
             self.assertNotIn(forbidden, text)
         self.assertIn("  - amd64\n", text)
