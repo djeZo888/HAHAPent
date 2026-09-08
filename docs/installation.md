@@ -4,8 +4,8 @@ Use Home Assistant's Supervisor-managed App store on an amd64 system running
 Home Assistant 2026.9.1 or later. The task report identifies the exact tested release.
 Manager updates use the normal App-store update action. The historical 0.1.0 →
 0.1.1 live update preserved settings, ownership records and code backups in
-`/data`. Manager 0.1.2 adds built-in catalog refresh; its current deployment
-evidence is tracked in Task 003.
+`/data`. Manager 0.1.2 is installed and verified on test-dev; its built-in catalog
+refresh and persistent cache passed actual Ingress and App-restart checks.
 Add `https://github.com/djeZo888/HAHAPent` as an App repository, install **HAHAPent
 Suite Manager**, start it, and open its Ingress interface as an administrator.
 There is no LAN port, owner-token option, or developer-computer dependency.
@@ -23,7 +23,6 @@ tests. No physical controls are part of the device-free fixture.
 
 Read the [App usage and recovery guide](../manager/DOCS.md),
 [JSON contract](catalog.md), and [Task 002 evidence](../tasks/002-suite-manager.md).
-The repository catalog includes the read-only Aquarius prerelease candidate.
 Manager 0.1.2's **Refresh** action retrieves canonical built-in metadata securely,
 with a validated persistent last-known-good cache and bundled bootstrap fallback.
 Refresh updates metadata only; select each integration version and action
@@ -32,6 +31,56 @@ explicitly. Catalog source status shows freshness or refresh failure. Manager
 See [Task 003](../tasks/003-led-integration.md) for actual release and acceptance
 status; a published candidate is not proof of live control validation.
 The acceptance-test catalog is separate and requires an explicit test action.
+
+# Aquarius Plant LED installation and use
+
+The 0.2.0 source supports six percentage channels and explicit Manual/Automatic
+selection for the validated controller profile. At this checkpoint, final 0.2.0
+publication, installation and actual HA control acceptance are pending. The
+[Task 003 report](../tasks/003-led-integration.md) is the current delivery record.
+The immutable [0.1.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
+and [0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.1)
+prereleases are read-only versions.
+
+Once the intended version is available in the catalog:
+
+1. Open Suite Manager as an administrator and choose **Refresh**. Select
+   **Aquarius Plant LED**, check the offered version, then choose **Install** or
+   **Update**. Refresh itself never installs code or restarts HA.
+2. Complete the indicated Home Assistant Core restart after the backup and
+   startup-effects checks. For a new installation, open **Settings → Devices &
+   services → Add integration → Aquarius Plant LED**.
+3. Enter the provisioned controller's local IP address or hostname and TCP port
+   **8080**. Home Assistant must reach that address; a connection from the
+   development computer is unnecessary. Setup only reads controller state.
+4. Open the new Aquarius device. It exposes **Channel A** through **Channel F**,
+   each from **0 to 100%** in one-point steps, and **Operating mode**. Check the
+   **Write support** diagnostic before using controls. Unvalidated profiles
+   expose readings but reject writes explicitly.
+
+To try a validated control, note its current percentage and the operating mode.
+Open one channel's Number control and enter a value one percentage point lower,
+or one point higher if the channel is already zero. Avoid sweeping the slider.
+Changing a channel preserves the other five current values and deliberately
+enters and saves **Manual**, pausing the stored automatic program. Wait for the
+confirmed reading, then return that channel to its noted value. If the lamp was
+following its program, select **Automatic program** in **Operating mode** to
+resume it. Keep initial checks brief and change one channel at a time.
+
+Choose **Manual** explicitly to retain the current output in Manual mode; choose
+**Automatic program** to resume the controller's existing schedule. Automatic
+operation may subsequently change percentages. These controls do not upload or
+edit schedules, map A–F to calibrated colours, or provide a software power switch.
+If an action fails or the state is unavailable, inspect a fresh reading before
+issuing another action; a failed request does not prove that the lamp ignored it.
+
+Setup, reconfiguration, startup, polling, reconnect and reload remain read-only.
+Only explicit controls can write a validated profile. Reconfigure the address
+for the same lamp to preserve its device and entity identity. To remove the
+integration, first delete its native HA configuration entry, then uninstall its
+owned code through Manager. Read-only update/rollback with preserved identity,
+native deletion and code removal have passed on test-dev; final 0.2.0 control and
+Manager/development-connection independence checks remain pending.
 
 # Reproducible App source build
 

@@ -147,7 +147,11 @@ retries a write or extends the ten-second limit.
 
 ### Reviewed source and independent results
 
-These hashes were checked before and after the independent final test run:
+The worker hashes were checked before and after the independent final test run.
+The HA-adapter test hash includes a later source-only split of one synthetic
+negative URL literal for the secret scanner; its identical constructed input
+received independent review and all 19 adapter tests passed again in 11.394
+seconds. Neither executable worker changed:
 
 | File | SHA-256 |
 | --- | --- |

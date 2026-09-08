@@ -359,3 +359,28 @@ while the native HA entry existed. Native HA's entry menu then deleted only
 the Aquarius entry, and Manager completed package removal. Final working
 installation is recorded separately when complete. These lifecycle operations used only the
 read-only releases and issued no lamp control commands.
+
+## Working control source and immutable publication
+
+Source `8fd50282111fe6eb3c02f0a00ac3716eb31e84d0` prepares module **0.2.0**
+with exactly the validated controller/version/six-channel write profile.
+Shutdown and unknown operating modes remain readable but cannot initiate or
+receive explicit controls. The missing translated write-support name is fixed.
+Independent source review **PASS**; local **343 unit tests PASS** and **56 native
+HA tests PASS**. [Source CI](https://github.com/djeZo888/HAHAPent/actions/runs/34291685273)
+completed successfully, including both Python versions, native HA and the actual
+amd64 App image/runtime checks. No private credentials were used by CI.
+
+The deterministic 0.2.0 ZIP SHA-256 is
+`9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382`.
+Publication and deployment results follow after verification. A second fresh
+pre-deployment encrypted backup was downloaded privately (46,254,080 bytes),
+and isolated decryption and selected-content readability passed using the
+existing retained recovery key. No live restore was performed.
+
+[Module 0.2.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0)
+was published as an immutable control candidate with ZIP, catalog snapshot and
+checksums. All three unauthenticated public downloads matched their local bytes;
+Manager's real archive validator accepted the ZIP and provenance. Artifact
+content and release notes passed secret/private-target scanning. Final native
+HA acceptance remains a separate gate before promoting its status.

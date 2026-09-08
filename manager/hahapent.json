@@ -81,6 +81,43 @@
         "hardware_controls": "blocked",
         "live_ha_acceptance": "not_tested"
       }
+    },
+    {
+      "id": "aquarius-plant-led",
+      "name": "Aquarius Plant LED",
+      "description": "Six percentage controls and Manual/Automatic-program selection for the validated six-channel controller profile. Unknown profiles remain read-only; setup and background operations never write. See task evidence for actual acceptance.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.2.0/modules/aquarius_plant_led/README.md",
+      "integration_domain": "aquarius_plant_led",
+      "version": "0.2.0",
+      "minimum_manager_version": "0.1.2",
+      "required_features": [],
+      "home_assistant": {
+        "min_version": "2026.9.1",
+        "max_version_exclusive": "2026.9.2"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/aquarius-plant-led-v0.2.0/aquarius-plant-led-0.2.0.zip",
+        "sha256": "9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382",
+        "format": "zip"
+      },
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "8fd50282111fe6eb3c02f0a00ac3716eb31e84d0",
+        "source_path": "modules/aquarius_plant_led"
+      },
+      "license": {
+        "status": "pending"
+      },
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "extensions": {
+        "release_status": "control-candidate",
+        "hardware_controls": "six_channels_validated",
+        "live_ha_acceptance": "pending"
+      }
     }
   ],
   "minimum_manager_version": "0.1.0",
