@@ -2,7 +2,9 @@
 
 import copy
 import fcntl
+import json
 import os
+import stat
 import threading
 import uuid
 from contextlib import contextmanager
@@ -61,6 +63,7 @@ class Manager:
         self.settings_path = self.data / "settings.json"
         self.registry_path = self.data / "registry.json"
         self.journal_path = self.data / "transaction.json"
+        self.builtin_cache_path = self.data / "builtin-catalog-cache.json"
         self.backups = self.data / "backups"
         no_symlink(self.backups)
         self.backups.mkdir(exist_ok=True, mode=0o700)
@@ -166,15 +169,113 @@ class Manager:
         with self._serialized():
             self._load_state()
             self._recover()
-            self._refresh_catalogs()
+            self._refresh_catalogs(fetch_builtin=True)
         return self.status()
 
-    def _refresh_catalogs(self):
+    def _load_builtin_cache(self, repository, source_id):
+        """Revalidate persisted metadata against the immutable bundled identity."""
+        no_symlink(self.builtin_cache_path)
+        try:
+            metadata = self.builtin_cache_path.stat()
+        except FileNotFoundError:
+            return None
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+            raise ManagerError("invalid_catalog_cache")
+        cache = load_catalog(self.builtin_cache_path)
+        if (
+            not isinstance(cache, dict)
+            or cache.keys() != {"schema_version", "fetched_at", "catalog"}
+            or type(cache["schema_version"]) is not int
+            or cache["schema_version"] != 1
+            or not isinstance(cache["fetched_at"], str)
+        ):
+            raise ManagerError("invalid_catalog_cache")
+        fetched_at = datetime.fromisoformat(cache["fetched_at"])
+        if fetched_at.tzinfo != timezone.utc:
+            raise ManagerError("invalid_catalog_cache")
+        validate_bound_catalog(cache["catalog"], repository, source_id)
+        return cache
+
+    def _refresh_builtin(self, bundled, fetch_remote):
+        """Select validated metadata; failed refreshes never replace a good cache."""
+        source_id = bundled["source"]["id"]
+        repository = bundled["source"]["repository_url"]
+        catalog = bundled
+        state = {
+            **bundled["source"],
+            "builtin": True,
+            "available": True,
+            "catalog_origin": "bundled",
+            "refresh_status": "not_checked",
+            "last_successful_refresh": None,
+            "last_refresh_attempt": None,
+        }
+        cache_writable = True
+        try:
+            cache = self._load_builtin_cache(repository, source_id)
+            if cache is not None:
+                catalog = cache["catalog"]
+                state.update(
+                    name=catalog["source"]["name"],
+                    catalog_origin="cache",
+                    last_successful_refresh=cache["fetched_at"],
+                )
+        except (OSError, ValueError, RecursionError, ManagerError):
+            # Preserve malformed/future cache documents for explicit recovery.
+            # Do not read through unsafe paths or rewrite an unknown format.
+            cache_writable = False
+            state["cache_error"] = "invalid_catalog_cache"
+        previous = self.source_states.get(source_id, {})
+        if previous.get("builtin") and source_id in self.catalogs:
+            prior = self.catalogs[source_id]
+            validate_bound_catalog(prior, repository, source_id)
+            if (previous.get("last_successful_refresh") or "") >= (
+                state["last_successful_refresh"] or ""
+            ):
+                catalog = prior
+                state = {
+                    **previous,
+                    **({"cache_error": state["cache_error"]} if "cache_error" in state else {}),
+                }
+        if not fetch_remote:
+            return catalog, state
+        attempt = datetime.now(timezone.utc).isoformat()
+        state.update(last_refresh_attempt=attempt, refresh_status="failed")
+        try:
+            candidate = loads_json(self._download(catalog_url(repository), MAX_JSON_BYTES))
+            validate_bound_catalog(candidate, repository, source_id)
+            if not cache_writable:
+                raise ManagerError("invalid_catalog_cache")
+            cache = {"schema_version": 1, "fetched_at": attempt, "catalog": candidate}
+            # The envelope must obey the same bounded JSON reader on restart.
+            serialized = json.dumps(cache, ensure_ascii=True, separators=(",", ":"))
+            if len(serialized.encode()) + 1 > MAX_JSON_BYTES:
+                raise ManagerError("catalog_cache_too_large")
+            loads_json(serialized)
+            try:
+                atomic_json(self.builtin_cache_path, cache, compact=True)
+            except (OSError, ValueError, ManagerError):
+                raise ManagerError("catalog_cache_write_failed") from None
+            catalog = candidate
+            state.update(
+                name=candidate["source"]["name"],
+                catalog_origin="remote",
+                refresh_status="success",
+                last_successful_refresh=attempt,
+            )
+            state.pop("error", None)
+            state.pop("cache_error", None)
+        except (ValueError, RecursionError):
+            state["error"] = "invalid_catalog"
+        except ManagerError as error:
+            state["error"] = error.code
+        return catalog, state
+
+    def _refresh_catalogs(self, *, fetch_builtin=False):
         catalogs, states = {}, {}
         builtin = self._base_catalog(self.builtin_catalog)
         builtin_id = builtin["source"]["id"]
-        catalogs[builtin_id] = builtin
-        states[builtin_id] = {**builtin["source"], "builtin": True, "available": True}
+        catalogs[builtin_id], states[builtin_id] = self._refresh_builtin(builtin, fetch_builtin)
         if self.settings.get("test_mode", False):
             if self.test_catalog is None:
                 raise ManagerError("test_catalog_unavailable")

@@ -1,3 +1,16 @@
+# 0.1.2
+
+- Refresh the built-in catalog from the canonical GitHub repository using the
+  existing secure downloader and source identity/schema/feature checks.
+- Atomically retain validated metadata for App restarts, with the bundled catalog
+  as bootstrap fallback. Invalid downloads or cache-write failures preserve the
+  last usable catalog; unsafe or unknown cache formats are not overwritten.
+- Show catalog origin, refresh timestamps and errors in Sources. Metadata refresh
+  does not install code or restart HA; duplicate-source and ownership rules remain.
+
+Synthetic validation and live deployment evidence are tracked separately in Task 003.
+The module and frozen device-free fixture releases remain independently versioned.
+
 # 0.1.1
 
 - Shut down gracefully when Supervisor stops the App, avoiding an error state

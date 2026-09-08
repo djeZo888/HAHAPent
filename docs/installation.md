@@ -2,9 +2,10 @@
 
 Use Home Assistant's Supervisor-managed App store on an amd64 system running
 Home Assistant 2026.9.1 or later. The task report identifies the exact tested release.
-Manager 0.1.1 updates an installed 0.1.0 candidate through the normal App store
-update action. That live update preserved settings, ownership records, and code
-backups in `/data`; version 0.1.1 also stops cleanly through Supervisor.
+Manager updates use the normal App-store update action. The historical 0.1.0 →
+0.1.1 live update preserved settings, ownership records and code backups in
+`/data`. Manager 0.1.2 adds built-in catalog refresh; its current deployment
+evidence is tracked in Task 003.
 Add `https://github.com/djeZo888/HAHAPent` as an App repository, install **HAHAPent
 Suite Manager**, start it, and open its Ingress interface as an administrator.
 There is no LAN port, owner-token option, or developer-computer dependency.
@@ -23,10 +24,13 @@ tests. No physical controls are part of the device-free fixture.
 Read the [App usage and recovery guide](../manager/DOCS.md),
 [JSON contract](catalog.md), and [Task 002 evidence](../tasks/002-suite-manager.md).
 The repository catalog includes the read-only Aquarius prerelease candidate.
-The installed Manager 0.1.1 still has its original empty built-in catalog:
-Refresh does not fetch a replacement from the repository. See
-[Task 003's delivery blocker](../tasks/003-led-integration.md#distribution-constraint-under-review)
-before attempting installation; no App update has been deployed for this candidate.
+Manager 0.1.2's **Refresh** action retrieves canonical built-in metadata securely,
+with a validated persistent last-known-good cache and bundled bootstrap fallback.
+Refresh updates metadata only; select each integration version and action
+explicitly. Catalog source status shows freshness or refresh failure. Manager
+0.1.1 requires the App update first because its refresh covers extra sources only.
+See [Task 003](../tasks/003-led-integration.md) for actual release and acceptance
+status; a published candidate is not proof of live control validation.
 The acceptance-test catalog is separate and requires an explicit test action.
 
 # Reproducible App source build

@@ -7,18 +7,28 @@ protected test-dev; its release and acceptance evidence are in
 was specific to that completed device-free lifecycle. Future deployment,
 integration or Core restart work must follow the current user's authorization
 and the runbook; do not infer a blanket operational grant from prior tests.
-Task 003 revision 2 authorizes implementing and publishing Aquarius Plant LED
-through the existing Manager, HA-side read-only diagnostics, and bounded,
-reversible lamp-only tests after a trustworthy readback baseline. Initial changes
-are limited to one channel by at most five percentage points for at most ten
-seconds, with deliberate restoration; stop on unexpected changes or competing
-controllers. Necessary test-dev Core restarts require the runbook safety gate.
-No startup, polling, reconnect or reload path may write lamp state. Private target
-configuration and supplied evidence stay outside Git. Do not rebuild Manager.
-The initial bounded lamp test failed; original channels and Automatic mode were
-deliberately restored and verified. Further lamp writes are stopped pending a
-revised safe restoration plan and resolved transport/firmware behavior. The
-published candidate must remain read-only with no enabled write profiles.
+Task 003 continuation authorizes targeted Manager catalog fixes, App builds,
+updates/restarts, module publication/deployment/native configuration, and
+necessary test-dev Core restarts after the runbook backup/startup/KNX gate.
+Finish with a working Aquarius Plant LED installation, configured and available
+for owner verification. The former no-rebuild restriction does not apply to
+these targeted changes. Preserve the immutable read-only release and historical
+failed-test report.
+Before renewed lamp writes, repair the failed recovery path, pass offline
+exception/cancellation/connection-loss tests, and document independent code review.
+Use a self-contained HA-side transaction with monotonic deadlines and cleanup
+independent of the development connection. Initial excursions change one channel
+by at most five percentage points for at most ten seconds, including deliberate
+restoration of channels and original mode, with an early measured recovery margin.
+Use a private validation-only target profile until all six channels and explicit
+Manual/Automatic behavior pass fresh hardware readback. A failed experiment
+pauses further writes for recovery and repair, while safe investigation and
+other authorized implementation work continue. Do not repeat a live experiment
+while restoration is unconfirmed or overwrite competing changes blindly.
+No setup, startup, polling, reconnect or reload path may write lamp state.
+Private target configuration, raw captures and supplied evidence stay outside Git.
+After lifecycle tests, reinstall/configure the final working version and verify
+operation with Manager and the development connection stopped.
 Do not regenerate credentials or repeat bootstrap. License selection is pending.
 
 ## Credentials and privacy

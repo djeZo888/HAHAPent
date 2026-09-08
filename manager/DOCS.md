@@ -5,7 +5,7 @@ In Home Assistant, open **Settings → Apps → App store → Repositories**, ad
 Start it and select **Open Web UI**. Administrator access is required; no separate
 account or LAN management port is provided. Keep protection mode enabled.
 
-Search the catalog and review the source, version, compatibility, dependencies,
+Choose **Refresh catalogs**, then search and review source, version, compatibility, dependencies,
 documentation, and restart requirement before choosing **Install** or **Update**.
 There are no automatic module updates. Installing files does not create a native
 Home Assistant configuration entry. After any required Core restart, use
@@ -16,7 +16,17 @@ Adding or removing a source changes catalog availability only. Previously instal
 entries remain in the registry when a source is removed or offline. Checksums
 verify downloaded bytes; they do not establish whether a publisher is trustworthy.
 
-The normal catalog initially has no production integrations. For the device-free
+Manager 0.1.2 refreshes the built-in catalog from the canonical HAHAPent GitHub
+repository. A successful refresh is validated and saved atomically before it
+becomes available. It neither installs integrations nor restarts Home Assistant.
+On App start the last valid cache is used without waiting for that network fetch;
+without a usable cache, the bundled catalog remains available. Open **Sources**
+to see whether metadata is bundled, cached, or fetched, the last successful refresh,
+the latest attempt in this App session, and any download/validation/cache error.
+A failed refresh preserves the previous usable metadata. A successful old cache
+timestamp does not prove that the repository is currently reachable or unchanged.
+
+For the device-free
 acceptance fixture, open **Sources** and enable **Show test integrations**. This
 reveals the separate test catalog without installing anything. Disable it after
 acceptance cleanup; it is not the aquarium integration.
@@ -52,9 +62,16 @@ use a cold backup so these files are captured while the Manager is stopped.
 The normal App update from 0.1.0 to 0.1.1 was verified to preserve this state.
 Version 0.1.1 supports clean Supervisor stop with a 30-second shutdown window.
 
+The built-in metadata cache is `/data/builtin-catalog-cache.json`; it has its own
+versioned envelope and is revalidated against the bundled source identity on
+every load. An invalid, unsafe, or future-format cache is preserved and reported,
+with the bundled catalog available for recovery. Preserve the file for diagnosis
+and resolve the cache error before attempting another refresh. Never substitute
+an untrusted catalog or modify ownership/settings records to resolve a cache error.
+
 # Limits
 
-Version 0.1.1 supports amd64, explicit individual module changes, and declared
+Version 0.1.2 supports amd64, explicit individual module changes, and declared
 dependency checks. It has no dependency solver or automatic module updates.
 Integrations run independently in Home Assistant after installation. The Manager
 does not update Home Assistant, firmware, or infrastructure. License selection

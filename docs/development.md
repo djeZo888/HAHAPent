@@ -114,7 +114,7 @@ After each push, independently verify the actual remote commit and the completed
 CI conclusion for that commit. Queued or running CI is not a passing result.
 Never force-push or rewrite shared history.
 
-## Task 003 candidate verification
+## Historical Task 003 candidate verification
 
 The Aquarius candidate is read-only: all write profiles are disabled after the
 first bounded hardware test failed its reconnect/restoration window. The original
@@ -206,3 +206,21 @@ Use `PASS`, `FAIL`, `BLOCKED`, `NOT_TESTED`,
 `AVAILABLE_NOT_EXERCISED`, and `NOT_REQUIRED` as defined in
 [access and secrets](access-and-secrets.md). Do not turn a read-only result into
 a claim that writes, restores, restarts, or device operations were exercised.
+
+
+## Task 003 continuation
+
+The continuation starts at merged main `7066bd6` on
+`task/003-complete-aquarius`; see the current authorization and evidence in
+[Task 003](../tasks/003-led-integration.md). The historical read-only artifact and
+incident report are retained. New immutable Manager/module versions will carry
+validated fixes.
+
+The coordinator reran `tooling/check_access.py --ssh` (PASS), created/downloaded
+and decrypted a fresh encrypted backup including Manager data (PASS), and reviewed
+current startup/KNX effects (PASS). Private HA-side native TCP measurements used
+only system/channel queries: ten complete reads passed in 0.322–0.520 seconds.
+Temporary Python packages were fetched, signature-verified and extracted with
+Alpine's [package tooling](https://wiki.alpinelinux.org/wiki/Apk); they were not
+installed into the SSH App's package database. All target configuration, helper
+transport and raw reports remain outside Git.

@@ -44,11 +44,15 @@ The emitted metadata records exact provenance and SHA-256; publication and catal
 updates remain separate reviewed steps. A prerelease candidate must clearly state
 its limits in the release, catalog description and module documentation.
 
-Manager 0.1.1 embeds the built-in catalog. Publishing root `hahapent.json` and its
-canonical build-context copy does not update an already installed App image.
-Refreshing or adding the same source cannot bypass that limitation. An App
-packaging update or a supported remote-catalog feature requires authorization;
-do not patch installed containers or directly copy acceptance integrations.
+Manager 0.1.2 refreshes the built-in catalog from the canonical repository using
+the same schema, identity and download protections as trusted sources. Publish
+new immutable artifacts first, then update root `hahapent.json` and synchronize
+its bootstrap build-context copy. Existing Manager 0.1.2 installations discover
+metadata through Refresh without an App rebuild for each module version; code
+installation and any Core restart remain explicit. Invalid/unavailable metadata
+leaves the validated last-known-good cache or bundled bootstrap in use, with an
+error shown. Manager 0.1.1 needs the normal App update to gain this capability.
+Never bypass source identity or patch acceptance code directly into HA.
 
 # Device-free acceptance assets
 
