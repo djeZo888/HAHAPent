@@ -4,13 +4,19 @@
     "step": {
       "user": {
         "title": "Connect an Aquarius Plant LED controller",
-        "description": "This release candidate is read-only. Bounded hardware write validation did not pass, so no controller profiles are enabled for writes. Enter the controller's local address to read its six channel levels and current mode. Channel and mode changes are blocked. The integration never changes the schedule or restores lamp output on startup.",
-        "data": {"host": "IP address or hostname", "port": "TCP port"}
+        "description": "Enter the controller's local address to read its six channel levels and current mode. For a validated controller, adjusting any channel enters and saves Manual, pausing the automatic program. Select Automatic program to resume the existing schedule. Setup and startup only read state. Other controller profiles remain read-only.",
+        "data": {
+          "host": "IP address or hostname",
+          "port": "TCP port"
+        }
       },
       "reconfigure": {
         "title": "Change controller address",
-        "description": "This release candidate is read-only; bounded hardware write validation did not pass. Update this controller's address while preserving its device, entities, and names. Use the address of the same lamp: the protocol does not expose a verified immutable device identifier. The connection check only reads state.",
-        "data": {"host": "IP address or hostname", "port": "TCP port"}
+        "description": "Update this controller's address while preserving its device, entities, and names. Use the address of the same lamp: the protocol does not expose a verified immutable device identifier. The connection check only reads state.",
+        "data": {
+          "host": "IP address or hostname",
+          "port": "TCP port"
+        }
       }
     },
     "error": {
@@ -30,14 +36,17 @@
         "name": "Write support",
         "state": {
           "read_only": "Read-only: controller profile not validated",
-          "validated_profile": "Controller profile validated for writes"
+          "validated_profile": "Controller profile validated for Manual and Automatic"
         }
       }
     },
     "select": {
       "operating_mode": {
         "name": "Operating mode",
-        "state": {"manual": "Manual", "automatic_program": "Automatic program"}
+        "state": {
+          "manual": "Manual",
+          "automatic_program": "Automatic program"
+        }
       }
     }
   }

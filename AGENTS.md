@@ -1,9 +1,10 @@
 # HAHAPent project instructions
 
 ## Current scope
-Tasks 001 and 002 are complete. Manager 0.1.1 is installed and verified on
-protected test-dev; its release and acceptance evidence are in
-`tasks/002-suite-manager.md`. Task 002's deployment/Core restart authorization
+Tasks 001 and 002 are complete; their historical Manager 0.1.1 acceptance
+evidence is in `tasks/002-suite-manager.md`. The Task 003 continuation has
+installed Manager 0.1.2 on protected test-dev and verified catalog refresh/cache
+persistence. Current acceptance evidence is in `tasks/003-led-integration.md`. Task 002's deployment/Core restart authorization
 was specific to that completed device-free lifecycle. Future deployment,
 integration or Core restart work must follow the current user's authorization
 and the runbook; do not infer a blanket operational grant from prior tests.

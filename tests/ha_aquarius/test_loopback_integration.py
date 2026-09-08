@@ -90,6 +90,53 @@ async def test_native_service_protocol_readback_and_readonly_reload(hass, loopba
     assert lamp.writes == writes
 
 
+async def test_shipped_profile_lifecycle_reads_and_explicit_service_controls(
+    hass, loopback_network
+):
+    # Manufacture this profile on loopback. Using the shipped allowlist verifies
+    # release admission; it does not constitute new actual-lamp evidence.
+    lamp = SyntheticLamp()
+    lamp.controller = (28, 30)
+    lamp.version = (26, 29)
+    lamp.mode = protocol.MODE_AUTOMATIC
+    port = await lamp.start()
+    entry = MockConfigEntry(domain=DOMAIN, title=NAME, data={"host": "127.0.0.1", "port": port})
+    entry.add_to_hass(hass)
+    try:
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert lamp.writes == []
+        await entry.runtime_data.async_refresh()
+        assert lamp.writes == []
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        assert lamp.writes == []
+        support = entity_id(hass, entry, "sensor", "write_support")
+        assert hass.states.get(support).state == "validated_profile"
+        channel = entity_id(hass, entry, "number", "channel_a")
+        await hass.services.async_call(
+            "number", "set_value", {"entity_id": channel, "value": 9}, blocking=True
+        )
+        assert lamp.channels == (9, 20, 30, 40, 50, 60)
+        assert lamp.mode == protocol.MODE_MANUAL
+        mode = entity_id(hass, entry, "select", "operating_mode")
+        assert hass.states.get(mode).attributes["options"] == ["manual", "automatic_program"]
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": mode, "option": "automatic_program"},
+            blocking=True,
+        )
+        assert lamp.mode == protocol.MODE_AUTOMATIC
+        writes = list(lamp.writes)
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        assert lamp.writes == writes
+    finally:
+        if entry.state is ConfigEntryState.LOADED:
+            await hass.config_entries.async_unload(entry.entry_id)
+        await lamp.close()
+
+
 async def test_ignored_write_echo_is_unavailable_then_recovers_without_replay(hass, loopback_entry):
     lamp, entry = loopback_entry
     coordinator = entry.runtime_data

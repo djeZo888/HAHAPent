@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -38,6 +39,9 @@ class FakeClock:
 
     def __call__(self):
         return self.value
+
+    def sleep(self, seconds):
+        self.value += seconds
 
     def advance(self, seconds, deadline):
         if self.value + seconds > deadline:
@@ -70,10 +74,15 @@ class Simulator:
         self.event("connect")
 
         class Session:
+            phase = "connected"
+            last_system = None
+
             def close(self):
                 simulator.closed += 1
 
             def read_state(self, deadline):
+                self.phase = "system_query_reply"
+                self.read_deadline = deadline
                 simulator.clock.advance(0.4, deadline)
                 simulator.event("read")
                 return simulator.state
@@ -108,7 +117,11 @@ class Simulator:
     def run(self, **kwargs):
         config = validation.Configuration.parse(config_data(), simulation=True)
         self.worker = validation.ValidationWorker(
-            config, session_factory=self.factory, clock=self.clock, **kwargs
+            config,
+            session_factory=self.factory,
+            clock=self.clock,
+            sleeper=self.clock.sleep,
+            **kwargs,
         )
         return self.worker.run()
 
@@ -220,6 +233,235 @@ class ValidationTransactionTests(unittest.TestCase):
         self.assertEqual(result["recovery"], "FAIL")
         self.assertEqual(len(simulator.writes), 2)
         self.assertNotEqual(simulator.state, simulator.original)
+        attempts = [
+            event for event in result["events"] if event["stage"] == "recovery_guard_read_attempt"
+        ]
+        self.assertEqual(len(attempts), validation.RECOVERY_READ_ATTEMPTS)
+
+    def test_first_recovery_connection_or_read_failure_retries_fresh_read_only(self):
+        for failure_event, error in (
+            ("connect", ConnectionRefusedError),
+            ("read", TimeoutError),
+            ("read", EOFError),
+        ):
+            with self.subTest(failure_event=failure_event, error=error):
+                simulator = Simulator()
+                failed = False
+
+                def transient(event, sim):
+                    nonlocal failed
+                    if sim.worker.cleaning and event == failure_event and not failed:
+                        failed = True
+                        sim.clock.sleep(0.8 if failure_event == "connect" else 0.4)
+                        raise error("synthetic first recovery transport failure")
+
+                simulator.hook = transient
+                result = simulator.run()
+                self.assertEqual(result["status"], "PASS", result)
+                self.assertEqual(simulator.state, simulator.original)
+                self.assertEqual(len(simulator.writes), 5)
+                self.assertLess(result["excursion_seconds"], 10)
+                failures = [
+                    event
+                    for event in result["events"]
+                    if event["stage"] == "recovery_guard_read_transport_failed"
+                ]
+                self.assertEqual(len(failures), 1)
+                self.assertEqual(
+                    failures[0]["phase"],
+                    "connect" if failure_event == "connect" else "system_query_reply",
+                )
+                attempts = [
+                    event
+                    for event in result["events"]
+                    if event["stage"] == "recovery_guard_read_attempt"
+                ]
+                self.assertEqual(len(attempts), 2)
+                self.assertEqual(
+                    attempts[0]["deadline_monotonic_seconds"],
+                    attempts[1]["deadline_monotonic_seconds"],
+                )
+                self.assertEqual(attempts[0]["command_reserve_seconds"], 4)
+
+    def test_full_experiment_budget_and_transient_guard_timeout_still_recover(self):
+        simulator = Simulator()
+        failed = False
+
+        def transient(event, sim):
+            nonlocal failed
+            if event == "system" and not sim.worker.cleaning:
+                sim.clock.value = sim.worker.excursion_started + 3
+                raise validation.DeadlineError("synthetic full experiment budget")
+            if sim.worker.cleaning and event == "read" and not failed:
+                failed = True
+                sim.clock.sleep(0.4)
+                raise TimeoutError("synthetic initial recovery guard timeout")
+
+        simulator.hook = transient
+        result = simulator.run()
+        self.assertEqual(result["experiment"], "FAIL")
+        self.assertEqual(result["recovery"], "PASS", result)
+        self.assertEqual(simulator.state, simulator.original)
+        self.assertLess(result["excursion_seconds"], validation.RECOVERY_DEADLINE_SECONDS)
+        restore_at = simulator.writes[2][0] - simulator.worker.excursion_started
+        self.assertLess(restore_at, validation.RECOVERY_DEADLINE_SECONDS - 4)
+
+    def test_restore_confirmation_read_retries_without_repeating_confirmed_writes(self):
+        for write_count in (4, 5):
+            with self.subTest(write_count=write_count):
+                simulator = Simulator()
+                failed = False
+
+                def transient(event, sim):
+                    nonlocal failed
+                    if event == "read" and len(sim.writes) == write_count and not failed:
+                        failed = True
+                        raise ConnectionResetError("synthetic lost independent restore read")
+
+                simulator.hook = transient
+                result = simulator.run()
+                self.assertEqual(result["status"], "PASS", result)
+                self.assertEqual(simulator.state, simulator.original)
+                self.assertEqual(len(simulator.writes), 5)
+                self.assertLess(result["excursion_seconds"], 10)
+
+    def test_unsafe_profile_partial_or_competing_read_is_never_retried(self):
+        for failure in ("profile", "partial", "competing"):
+            with self.subTest(failure=failure):
+                simulator = Simulator()
+                guard_reads = 0
+
+                def unsafe(event, sim):
+                    nonlocal guard_reads
+                    if event == "read" and sim.worker.cleaning:
+                        guard_reads += 1
+                        if failure == "partial":
+                            raise validation.UnsafeState("synthetic ambiguous partial reply")
+                        if failure == "profile":
+                            sim.state = replace(sim.state, version=(2, 6))
+                        else:
+                            sim.state = replace(sim.state, channels=(9, 20, 30, 40, 51, 60))
+
+                simulator.hook = unsafe
+                result = simulator.run()
+                self.assertEqual(result["recovery"], "FAIL")
+                self.assertEqual(guard_reads, 1)
+                self.assertEqual(len(simulator.writes), 2)
+                self.assertFalse(
+                    any(
+                        event["stage"].endswith("_read_transport_failed")
+                        for event in result["events"]
+                    )
+                )
+
+    def test_observed_competing_mode_before_channel_timeout_is_not_retried(self):
+        simulator = Simulator()
+        guard_reads = 0
+
+        def competing(event, sim):
+            nonlocal guard_reads
+            if event == "read" and sim.worker.cleaning:
+                guard_reads += 1
+                sim.worker.session.last_system = (0, (0x12, 0x3C), (2, 5), 6)
+                raise TimeoutError("synthetic channels lost after competing Automatic status")
+
+        simulator.hook = competing
+        result = simulator.run()
+        self.assertEqual(result["recovery"], "FAIL")
+        self.assertEqual(guard_reads, 1)
+        self.assertEqual(len(simulator.writes), 2)
+        self.assertEqual(
+            next(event for event in result["events"] if event["stage"] == "recovery_unconfirmed")[
+                "reason"
+            ],
+            "UnsafeState",
+        )
+
+    def test_read_retry_budget_exhaustion_preserves_commands_reserve(self):
+        simulator = Simulator()
+
+        def timeouts(event, sim):
+            if event == "read" and sim.worker.cleaning:
+                sim.clock.advance(0.4, sim.worker.session.read_deadline)
+                raise TimeoutError("synthetic recovery network loss")
+
+        simulator.hook = timeouts
+        result = simulator.run()
+        self.assertEqual(result["recovery"], "FAIL")
+        self.assertEqual(len(simulator.writes), 2)
+        attempts = [
+            event for event in result["events"] if event["stage"] == "recovery_guard_read_attempt"
+        ]
+        self.assertLessEqual(len(attempts), 3)
+        self.assertLessEqual(
+            simulator.clock(), attempts[0]["deadline_monotonic_seconds"] + 0.000001
+        )
+
+    def test_recovery_write_failure_is_never_retried(self):
+        for failure_event in ("channel_sent", "mode_sent"):
+            with self.subTest(failure_event=failure_event):
+                simulator = Simulator()
+
+                def uncertain(event, sim):
+                    if event == failure_event and sim.worker.cleaning:
+                        raise TimeoutError("synthetic uncertain recovery write")
+
+                simulator.hook = uncertain
+                result = simulator.run()
+                self.assertEqual(result["recovery"], "FAIL")
+                self.assertEqual(len(simulator.writes), 3 if failure_event == "channel_sent" else 4)
+                self.assertEqual(simulator.connections, 3)
+
+    def test_lost_cleanup_system_barrier_reply_uses_fresh_state_without_write_replay(self):
+        for write_count in (4, 5):
+            with self.subTest(write_count=write_count):
+                simulator = Simulator()
+
+                def uncertain(event, sim):
+                    if event == "system" and len(sim.writes) == write_count:
+                        raise TimeoutError("synthetic lost cleanup barrier reply")
+
+                simulator.hook = uncertain
+                result = simulator.run()
+                self.assertEqual(result["status"], "PASS", result)
+                self.assertEqual(simulator.state, simulator.original)
+                self.assertEqual(len(simulator.writes), 5)
+                self.assertLess(result["excursion_seconds"], 10)
+
+    def test_lost_cleanup_barrier_with_ignored_channels_stops_before_original_mode(self):
+        simulator = Simulator()
+
+        def ignored(event, sim):
+            if event == "system" and sim.worker.cleaning:
+                sim.state = replace(sim.state, channels=sim.worker.changed)
+                raise EOFError("synthetic ignored channels and lost barrier reply")
+
+        simulator.hook = ignored
+        result = simulator.run()
+        self.assertEqual(result["recovery"], "FAIL")
+        self.assertEqual(len(simulator.writes), 4)
+        self.assertEqual(simulator.state.mode, 1)
+        self.assertEqual(simulator.state.channels, simulator.worker.changed)
+
+    def test_unsafe_cleanup_barrier_reply_does_not_trigger_read_retry(self):
+        simulator = Simulator()
+
+        def ambiguous(event, sim):
+            if event == "system" and sim.worker.cleaning:
+                raise validation.UnsafeState("synthetic partial cleanup barrier")
+
+        simulator.hook = ambiguous
+        result = simulator.run()
+        self.assertEqual(result["recovery"], "FAIL")
+        self.assertEqual(len(simulator.writes), 4)
+        self.assertEqual(simulator.connections, 3)
+
+    def test_events_have_absolute_monotonic_timestamps_without_endpoint_details(self):
+        result = Simulator().run()
+        timestamps = [event["monotonic_seconds"] for event in result["events"]]
+        self.assertEqual(timestamps, sorted(timestamps))
+        self.assertTrue(all(value >= 100 for value in timestamps))
+        self.assertNotIn("127.0.0.1", json.dumps(result))
 
     def test_competing_channel_change_stops_cleanup_without_snapshot_replay(self):
         simulator = Simulator()
@@ -438,12 +680,17 @@ class LoopbackDevice:
         self.first_channel = threading.Event()
         self.restore_channel = threading.Event()
         self.response_filter = None
+        self.connection_response_filter = None
+        self.connections = 0
         self.ignore_writes = False
         device = self
 
         class Handler(socketserver.BaseRequestHandler):
             def handle(self):
                 data = bytearray()
+                with device.lock:
+                    device.connections += 1
+                    connection = device.connections
                 try:
                     while True:
                         chunk = self.request.recv(1024)
@@ -477,6 +724,12 @@ class LoopbackDevice:
                                     raise AssertionError("unexpected request")
                                 if device.response_filter is not None:
                                     response = device.response_filter(command, response)
+                                if device.connection_response_filter is not None:
+                                    response = device.connection_response_filter(
+                                        connection, command, response
+                                    )
+                            if response is None:
+                                return
                             self.request.sendall(response[:7])
                             self.request.sendall(response[7:])
                 except (ConnectionError, socket.timeout):
@@ -504,6 +757,188 @@ class LoopbackDevice:
 
 
 class NativeWorkerLoopbackTests(unittest.TestCase):
+    def test_lost_cleanup_barrier_reply_confirms_fresh_state_without_write_replay(self):
+        for failed_connection, ignore_restore in ((3, False), (4, False), (3, True)):
+            with self.subTest(failed_connection=failed_connection, ignore_restore=ignore_restore):
+                with LoopbackDevice() as device:
+                    queries = {}
+
+                    def lost_barrier(connection, command, response):
+                        if (
+                            connection == 3
+                            and command == validation.CHANNEL_QUERY
+                            and ignore_restore
+                        ):
+                            device.ignore_writes = True
+                        if command == validation.SYSTEM_QUERY:
+                            queries[connection] = queries.get(connection, 0) + 1
+                            if connection == failed_connection and queries[connection] == 2:
+                                return b""
+                        return response
+
+                    device.connection_response_filter = lost_barrier
+                    config = validation.Configuration.parse(
+                        {**config_data(), "port": device.port}, simulation=True
+                    )
+                    result = validation.ValidationWorker(config).run()
+                self.assertEqual(result["recovery"], "FAIL" if ignore_restore else "PASS", result)
+                self.assertLess(result["excursion_seconds"], 10)
+                writes = [command for command in device.observed if command[2] == 0xFA]
+                self.assertEqual(len(writes), 4 if ignore_restore else 5)
+                self.assertEqual(device.state["mode"], 1 if ignore_restore else 0)
+                self.assertEqual(
+                    device.state["channels"], (9 if ignore_restore else 10, 20, 30, 40, 50, 60)
+                )
+                failures = [
+                    event
+                    for event in result["events"]
+                    if event["stage"].endswith("_system_barrier_transport_failed")
+                ]
+                self.assertEqual(len(failures), 1)
+                self.assertEqual(failures[0]["phase"], "system_query_reply")
+
+    def test_transient_guard_eof_timeout_and_restore_readback_loss_retry_only_reads(self):
+        for failed_connection, failure in ((3, "eof"), (3, "timeout"), (4, "eof"), (5, "eof")):
+            with self.subTest(failed_connection=failed_connection, failure=failure):
+                with LoopbackDevice() as device:
+                    device.connection_response_filter = lambda connection, command, response: (
+                        (None if failure == "eof" else b"")
+                        if connection == failed_connection
+                        else response
+                    )
+                    config = validation.Configuration.parse(
+                        {**config_data(), "port": device.port}, simulation=True
+                    )
+                    result = validation.ValidationWorker(config).run()
+                self.assertEqual(result["status"], "PASS", result)
+                self.assertLess(result["excursion_seconds"], 10)
+                self.assertEqual(device.state, {"mode": 0, "channels": (10, 20, 30, 40, 50, 60)})
+                self.assertEqual(
+                    len([command for command in device.observed if command[2] == 0xFA]), 5
+                )
+                failures = [
+                    event
+                    for event in result["events"]
+                    if event["stage"].endswith("_read_transport_failed")
+                ]
+                self.assertEqual(len(failures), 1)
+                self.assertEqual(failures[0]["phase"], "system_query_reply")
+                self.assertEqual(
+                    failures[0]["reason"],
+                    "EOFError" if failure == "eof" else socket.timeout.__name__,
+                )
+
+    def test_transient_connection_failure_then_native_fresh_read_restores(self):
+        with LoopbackDevice() as device:
+            config = validation.Configuration.parse(
+                {**config_data(), "port": device.port}, simulation=True
+            )
+            attempts = 0
+
+            def factory(config, deadline, clock):
+                nonlocal attempts
+                attempts += 1
+                if attempts == 3:
+                    raise ConnectionRefusedError("synthetic one-off connection refusal")
+                return validation.WireSession(config, deadline, clock)
+
+            result = validation.ValidationWorker(config, session_factory=factory).run()
+        self.assertEqual(result["status"], "PASS", result)
+        self.assertLess(result["excursion_seconds"], 10)
+        self.assertEqual(device.state, {"mode": 0, "channels": (10, 20, 30, 40, 50, 60)})
+        self.assertEqual(len([command for command in device.observed if command[2] == 0xFA]), 5)
+        failure = next(
+            event
+            for event in result["events"]
+            if event["stage"] == "recovery_guard_read_transport_failed"
+        )
+        self.assertEqual(failure["phase"], "connect")
+
+    def test_persistent_native_transport_loss_is_bounded_and_never_writes_blindly(self):
+        with LoopbackDevice() as device:
+            device.connection_response_filter = (
+                lambda connection, command, response: None if connection >= 3 else response
+            )
+            config = validation.Configuration.parse(
+                {**config_data(), "port": device.port}, simulation=True
+            )
+            result = validation.ValidationWorker(config).run()
+        self.assertEqual(result["experiment"], "PASS")
+        self.assertEqual(result["recovery"], "FAIL")
+        self.assertLess(result["excursion_seconds"], 10)
+        self.assertEqual(len([command for command in device.observed if command[2] == 0xFA]), 2)
+        failures = [
+            event
+            for event in result["events"]
+            if event["stage"] == "recovery_guard_read_transport_failed"
+        ]
+        self.assertEqual(len(failures), 3)
+        self.assertEqual(device.connections, 5)
+
+    def test_partial_reply_or_invalid_profile_is_terminal_without_native_retry(self):
+        for failure in ("partial", "profile", "competing_mode"):
+            with self.subTest(failure=failure):
+                with LoopbackDevice() as device:
+
+                    def corrupt(connection, command, response):
+                        if connection != 3:
+                            return response
+                        if failure == "partial":
+                            return b"\xf1"
+                        if command == validation.CHANNEL_QUERY:
+                            return None
+                        raw = bytearray(response)
+                        if failure == "profile":
+                            raw[7] = 9
+                        else:
+                            raw[4] = 0
+                        return bytes(raw)
+
+                    device.connection_response_filter = corrupt
+                    config = validation.Configuration.parse(
+                        {**config_data(), "port": device.port}, simulation=True
+                    )
+                    result = validation.ValidationWorker(config).run()
+                self.assertEqual(result["recovery"], "FAIL", result)
+                self.assertEqual(device.connections, 3)
+                self.assertEqual(
+                    len([command for command in device.observed if command[2] == 0xFA]), 2
+                )
+                self.assertEqual(
+                    next(
+                        event
+                        for event in result["events"]
+                        if event["stage"] == "recovery_unconfirmed"
+                    )["reason"],
+                    "UnsafeState",
+                )
+
+    def test_full_native_experiment_timeout_and_first_recovery_loss_restore_in_time(self):
+        with LoopbackDevice() as device:
+            device.connection_response_filter = (
+                lambda connection, command, response: None if connection == 2 else response
+            )
+            config = validation.Configuration.parse(
+                {**config_data(), "port": device.port}, simulation=True
+            )
+
+            class SlowExperiment(validation.ValidationWorker):
+                def _command(self, channels, mode, deadline, stage):
+                    if stage == "experiment":
+                        self.session.send(
+                            validation.channel_frame(channels, self.config.controller), deadline
+                        )
+                        self.session.send(validation.mode_frame(mode), deadline)
+                        time.sleep(max(0, deadline - self.clock()))
+                        raise validation.DeadlineError("synthetic full experiment timeout")
+                    return super()._command(channels, mode, deadline, stage)
+
+            result = SlowExperiment(config).run()
+        self.assertEqual(result["experiment"], "FAIL")
+        self.assertEqual(result["recovery"], "PASS", result)
+        self.assertLess(result["excursion_seconds"], 10)
+        self.assertEqual(device.state, {"mode": 0, "channels": (10, 20, 30, 40, 50, 60)})
+
     def test_whole_worker_with_native_tcp_fragmented_replies_and_write_echoes(self):
         with LoopbackDevice() as device:
             config = validation.Configuration.parse(

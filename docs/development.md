@@ -225,10 +225,53 @@ Alpine's [package tooling](https://wiki.alpinelinux.org/wiki/Apk); they were not
 installed into the SSH App's package database. All target configuration, helper
 transport and raw reports remain outside Git.
 
-Continuation source checks: 304 synthetic unit tests PASS (57.673 seconds),
-47 native HA tests PASS, Ruff/catalog/bundle checks PASS. The 26-test autonomous
-worker suite and independent review preceded hardware revalidation. Five bounded
-channel tests passed; F timed out during its first recovery read, failed the
-ten-second bound, and was later deliberately restored. See current Task 003
-evidence for measured timings and the required recovery-read retry repair.
+The initial continuation source checkpoint passed 304 synthetic unit tests
+(57.673 seconds), 47 native HA framework tests and Ruff/catalog/bundle checks.
+The later native form-serialization repair passed 14 config-flow tests and
+53 total HA framework tests. These are synthetic checks; FlowManager HTTP
+serialization is covered explicitly after an actual 0.1.0 setup failure exposed
+the missing test boundary.
+
+The first 26-test autonomous-worker review preceded actual direct-TCP A–E passes.
+F01 then timed out during its first recovery read, abandoned the remaining
+reserve and exceeded the ten-second bound. Subsequent deliberate restoration
+confirmed the original channels and Automatic; the estimated total excursion
+was about 53.16 seconds. That failure and the original longer incident remain
+in [Task 003](../tasks/003-led-integration.md).
+
+The repaired worker and HA-service adapter passed the superseding independent
+gate:
+
+```sh
+.venv/bin/python -B -m unittest tests.test_aquarius_validation tests.test_aquarius_ha_validation -q
+.venv/bin/ruff check tooling/aquarius_validation.py tests/test_aquarius_validation.py tooling/aquarius_ha_validation.py tests/test_aquarius_ha_validation.py
+```
+
+Result: **62 tests PASS in 53.171 seconds; Ruff PASS**. The 43 base-worker tests
+exercise simulated timing, native loopback TCP and detached-process cleanup;
+the 19 adapter tests use synthetic services and loopback HTTP. Exact reviewed
+source/test hashes and the failure cases are recorded in the
+[independent review](aquarius-validation-review.md#reviewed-source-and-independent-results).
+Read-only retries use at most three fresh connections and 2.5 seconds per stage,
+preserving four seconds for initial restoration and two seconds before a remaining
+original-mode action. Transport-only loss of a cleanup system-query reply permits
+fresh full-state confirmation, never a repeated write. Unsafe or competing
+replies remain terminal. Events include absolute monotonic timestamps and the
+failed connection/query phase. Network loss can still prevent confirmed recovery.
+
+Actual repaired **F02 direct-TCP validation PASS**: a one-point increase, original
+channels confirmed at 2.056392 seconds, original Automatic at 2.653862 seconds,
+and total excursion 2.653872 seconds. Launching SSH returned in 0.140 seconds;
+the detached worker completed locally. Two later read-only checks confirmed
+Automatic. Together with A–E, this supplies successful bounded evidence for all
+six direct channel controls. Actual HA Number/Select service controls remain
+pending and are not inferred from the adapter tests.
+
 Actual Manager 0.1.2 App update, Ingress refresh and cache persistence passed.
+Its later Refresh discovered module 0.1.1 without rebuilding the App; the real
+Manager update from module 0.1.0 to 0.1.1 and gated Core health checks passed.
+The repaired native HA UI reached `create_entry`, with six numeric 0–100 Numbers
+and an Automatic Select. Diagnostic acceptance, rollback/removal and final
+reinstallation remain pending. Module 0.1.1 is still read-only; source 0.2.0 and
+actual native controls are being prepared. These delivery results do not yet
+establish final owner-ready operation or Manager/development-connection independence.

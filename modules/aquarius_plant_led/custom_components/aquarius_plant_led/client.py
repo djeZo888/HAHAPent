@@ -13,9 +13,9 @@ from typing import Awaitable, Callable, Optional
 
 from .protocol import (
     CHANNEL_QUERY,
-    KNOWN_MODES,
     MODE_AUTOMATIC,
     MODE_MANUAL,
+    SUPPORTED_CONTROL_MODES,
     SYSTEM_QUERY,
     ProtocolError,
     StreamDecoder,
@@ -130,6 +130,8 @@ class AquariusClient:
         self, mode: int, expected_state: Optional[DeviceState] = None
     ) -> DeviceState:
         """Choose an explicit mode without changing the stored channel/program data."""
+        if type(mode) is not int or mode not in SUPPORTED_CONTROL_MODES:
+            raise ProtocolError("only Automatic or Manual control has been validated")
         command = mode_frame(mode)
 
         async def operation() -> DeviceState:
@@ -139,7 +141,7 @@ class AquariusClient:
             self._verify_profile(before, after)
             if after.system.mode_raw != mode:
                 raise ConflictError("mode readback differed; no restore was attempted")
-            # Automatic/Shutdown can legitimately change output percentages.
+            # Automatic can legitimately change output percentages.
             if mode == MODE_MANUAL and after.channels != before.channels:
                 raise ConflictError("channels changed unexpectedly while selecting Manual")
             return after
@@ -240,7 +242,10 @@ class AquariusClient:
         # mode/profile or changed Manual output still indicates a conflict.
         if before.system.mode_raw != MODE_AUTOMATIC and before.channels != previous.channels:
             raise ConflictError("device state changed before command; refresh and review it")
-        if not before.system.write_supported or before.system.mode_raw not in KNOWN_MODES:
+        if (
+            not before.system.write_supported
+            or before.system.mode_raw not in SUPPORTED_CONTROL_MODES
+        ):
             raise UnsupportedDeviceError("device profile or current mode is unverified for writes")
         return before
 

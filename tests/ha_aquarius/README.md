@@ -9,11 +9,14 @@ and parser, and a synthetic TCP lamp, including C/D wire mapping and ignored-wri
 echoes. All replies and targets are synthetic; no lamp or HA credentials are
 needed and no physical behavior is validated here.
 
-The release candidate's shipped write-profile allowlist is empty. Action tests
-temporarily enable fictional profiles inside their fixture scope; they do not
-enable writes in the distributable source. The unvalidated-profile regression
-uses an empty allowlist and verifies that all six Number controls and both mode
-choices raise a clear read-only validation error without any client command.
+Version 0.2.0 ships one independently hardware-validated profile. Most action
+tests temporarily enable fictional profiles inside their fixture scope. A
+separate loopback test manufactures the shipped profile and exercises actual
+release admission, read-only setup/poll/reload, and explicit services. This is
+still synthetic evidence. The unvalidated-profile regression uses an empty
+allowlist and verifies that all six Number controls and both mode choices raise
+a clear read-only error without any client command. Shutdown and unknown starting
+modes remain readable but cannot admit commands.
 
 Use Python 3.14.7 and the dedicated dependency lock from the repository root:
 
@@ -25,7 +28,7 @@ python3.14 -m venv /private/tmp/hahapent-ha-tests
 
 The repository `pyproject.toml` sets `asyncio_mode = "auto"` and fixture loop scope
 to `function`, so the ordinary command correctly awaits the HA fixtures and
-tests. TCP sockets are disabled by default. The two simulator tests use
+tests. TCP sockets are disabled by default. The simulator tests use
 `pytest.mark.allow_hosts(["127.0.0.1"])` plus a scoped `socket_enabled` fixture
 (required by HA's own socket-creation guard), immediately applying
 `socket_allow_hosts(["127.0.0.1"])` before any network action. This permits only

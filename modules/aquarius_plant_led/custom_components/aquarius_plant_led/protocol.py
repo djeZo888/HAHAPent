@@ -13,11 +13,14 @@ MODE_AUTOMATIC = 0
 MODE_MANUAL = 1
 MODE_SHUTDOWN = 8
 KNOWN_MODES = frozenset((MODE_AUTOMATIC, MODE_MANUAL, MODE_SHUTDOWN))
+SUPPORTED_CONTROL_MODES = frozenset((MODE_AUTOMATIC, MODE_MANUAL))
 SWAPPED_CONTROLLER = (0x14, 0x32)
 
 # A release must list only profiles validated through device readback. An
 # unrecognized controller can be inspected but never receives write commands.
-VERIFIED_WRITE_PROFILES: frozenset[tuple[tuple[int, int], tuple[int, int], int]] = frozenset()
+VERIFIED_WRITE_PROFILES: frozenset[tuple[tuple[int, int], tuple[int, int], int]] = frozenset(
+    {((28, 30), (26, 29), 6)}
+)
 
 
 class ProtocolError(ValueError):

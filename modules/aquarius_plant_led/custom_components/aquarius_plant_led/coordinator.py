@@ -18,7 +18,7 @@ from .const import (
     MODE_OPTIONS,
     POLL_SECONDS,
 )
-from .protocol import ProtocolError
+from .protocol import SUPPORTED_CONTROL_MODES, ProtocolError
 
 _LOGGER = logging.getLogger(__name__)
 EXPLICIT_COMMAND_TIMEOUT = 3.0
@@ -83,6 +83,11 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
             raise ServiceValidationError(
                 "This controller profile is read-only: bounded hardware write validation "
                 "has not passed. Channel and mode changes are disabled for this profile."
+            )
+        if self.data.system.mode_raw not in SUPPORTED_CONTROL_MODES:
+            raise ServiceValidationError(
+                "The controller is in an unsupported operating mode. "
+                "Only changes from Manual or Automatic have been validated."
             )
 
     def _require_current_request(self, epoch: int) -> None:

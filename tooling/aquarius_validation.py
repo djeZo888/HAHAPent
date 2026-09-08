@@ -29,6 +29,11 @@ RECOVERY_DEADLINE_SECONDS = 9.5
 PREFLIGHT_SECONDS = 8.0
 IO_TIMEOUT = 0.8
 WRITE_RECOVERY_MARGIN = 1.8
+RECOVERY_READ_ATTEMPTS = 3
+RECOVERY_READ_SECONDS = 2.5
+RECOVERY_READ_PAUSE = 0.1
+RECOVERY_COMMAND_RESERVE = 4.0
+RECOVERY_MODE_RESERVE = 2.0
 QUERY_PAUSE = 0.2
 MANUAL_PAUSE = 0.1
 WRITE_DRAIN_PAUSE = 0.2
@@ -206,6 +211,8 @@ class WireSession:
         self.clock = clock
         self.decoder = Decoder()
         self.received = 0
+        self.phase = "connect"
+        self.last_system = None
         self.socket = socket.create_connection(
             (config.host, config.port), timeout=self._timeout(deadline)
         )
@@ -220,14 +227,27 @@ class WireSession:
         self.socket.close()
 
     def send(self, command, deadline):
+        if command == SYSTEM_QUERY:
+            self.phase = "system_query_send"
+        elif command == CHANNEL_QUERY:
+            self.phase = "channel_query_send"
+        else:
+            self.phase = "channel_write" if command[1] == 0xE2 else "mode_write"
         self.socket.settimeout(self._timeout(deadline))
         self.socket.sendall(command)
 
     def _receive(self, deadline):
         self.socket.settimeout(self._timeout(deadline))
-        data = self.socket.recv(1024)
+        try:
+            data = self.socket.recv(1024)
+        except OSError:
+            if self.decoder.buffer:
+                raise UnsafeState("transport failed with a partial reply") from None
+            raise
         if not data:
-            raise ValidationError("TCP connection closed before confirmation")
+            if self.decoder.buffer:
+                raise UnsafeState("connection closed with a partial reply")
+            raise EOFError("TCP connection closed before confirmation")
         self.received += len(data)
         if self.received > MAX_RECEIVED:
             raise UnsafeState("session receive limit exceeded")
@@ -235,6 +255,7 @@ class WireSession:
 
     def quarantine(self, duration, deadline, echoes=()):
         """Drain only known write echoes, ACKs and extended frames for a fixed interval."""
+        self.phase = "quarantine"
         end = min(deadline, self.clock() + duration)
         if end - self.clock() < duration - 0.001:
             raise DeadlineError("insufficient time for the processing interval")
@@ -249,7 +270,10 @@ class WireSession:
             raise UnsafeState("unfinished unsolicited frame")
 
     def query(self, command, deadline):
+        name = "system_query" if command == SYSTEM_QUERY else "channel_query"
+        self.phase = name + "_send"
         self.send(command, deadline)
+        self.phase = name + "_reply"
         end = min(deadline, self.clock() + IO_TIMEOUT)
         while self.clock() < end:
             messages = self._receive(end)
@@ -262,14 +286,24 @@ class WireSession:
                 if len(messages) != 1 or self.decoder.buffer:
                     raise UnsafeState("extra or partial reply is ambiguous")
                 return response
-        raise DeadlineError("query deadline reached")
+        if self.clock() >= deadline:
+            raise DeadlineError("query deadline reached")
+        raise TimeoutError("query response timed out")
 
     def system(self, deadline):
         response = self.query(SYSTEM_QUERY, deadline)
-        return response[4], (response[9], response[10]), (response[7], response[8]), response[11]
+        self.last_system = (
+            response[4],
+            (response[9], response[10]),
+            (response[7], response[8]),
+            response[11],
+        )
+        return self.last_system
 
     def read_state(self, deadline):
         mode, controller, version, count = self.system(deadline)
+        if (controller, version, count) != self.config.profile or mode not in (0, 1):
+            raise UnsafeState("profile or operating mode differs from the validation profile")
         self.quarantine(QUERY_PAUSE, deadline)
         response = self.query(CHANNEL_QUERY, deadline)
         values = list(_channels(response[3:9]))
@@ -319,11 +353,14 @@ class ValidationWorker:
         session_factory: Callable = WireSession,
         clock: Callable = time.monotonic,
         sink: Optional[Callable] = None,
+        sleeper: Callable = time.sleep,
     ):
         self.config = config
         self.factory = session_factory
         self.clock = clock
         self.sink = sink
+        self.sleeper = sleeper
+        self.io_phase = "idle"
         self.started = clock()
         self.excursion_started = None
         self.recovery_confirmed_at = None
@@ -340,6 +377,9 @@ class ValidationWorker:
             "maximum_excursion_seconds": MAX_EXCURSION,
             "experiment_phase_seconds": EXPERIMENT_SECONDS,
             "recovery_reserved_seconds": RECOVERY_DEADLINE_SECONDS - EXPERIMENT_SECONDS,
+            "recovery_read_attempt_limit": RECOVERY_READ_ATTEMPTS,
+            "recovery_read_budget_seconds": RECOVERY_READ_SECONDS,
+            "recovery_command_reserve_seconds": RECOVERY_COMMAND_RESERVE,
             "events": [],
         }
 
@@ -353,9 +393,14 @@ class ValidationWorker:
             raise StopRequested()
 
     def _event(self, stage, **details):
-        event = {"stage": stage, "elapsed_seconds": round(self.clock() - self.started, 6)}
+        now = self.clock()
+        event = {
+            "stage": stage,
+            "monotonic_seconds": round(now, 6),
+            "elapsed_seconds": round(now - self.started, 6),
+        }
         if self.excursion_started is not None:
-            event["excursion_seconds"] = round(self.clock() - self.excursion_started, 6)
+            event["excursion_seconds"] = round(now - self.excursion_started, 6)
         event.update(details)
         self.report["events"].append(event)
         # Persist intent before the first write, then keep stage timings in
@@ -381,21 +426,76 @@ class ValidationWorker:
     def _connect(self, deadline):
         self._check_stop()
         self._close()
+        self.io_phase = "connect"
+        self._event("connection_started", deadline_monotonic_seconds=round(deadline, 6))
         self.session = self.factory(self.config, deadline, self.clock)
+        self._event("connection_established")
         self._check_stop()
 
     def _read(self, deadline, *, fresh=False):
         self._check_stop()
         if fresh or self.session is None:
             self._connect(deadline)
+        self.io_phase = "state_query"
         state = self.session.read_state(deadline)
         self._check_stop()
         if state.profile != self.config.profile or state.mode not in (0, 1):
             raise UnsafeState("profile or operating mode differs from the validation profile")
         return state
 
+    def _failure_phase(self):
+        return getattr(self.session, "phase", self.io_phase)
+
+    def _fresh_recovery_read(self, deadline, *, reserve, stage, expected_mode=None):
+        """Retry only fresh status reads, never an uncertain write or unsafe reply.
+
+        Each stage shares one read deadline and leaves time for any remaining
+        commands. A transport failure after an observed competing mode is unsafe,
+        even if the rest of that status reply was lost.
+        """
+        read_deadline = min(self.clock() + RECOVERY_READ_SECONDS, deadline - reserve)
+        for attempt in range(1, RECOVERY_READ_ATTEMPTS + 1):
+            if self.clock() >= read_deadline:
+                raise DeadlineError("recovery read reserve exhausted")
+            self._event(
+                stage + "_read_attempt",
+                attempt=attempt,
+                deadline_monotonic_seconds=round(read_deadline, 6),
+                command_reserve_seconds=reserve,
+            )
+            try:
+                state = self._read(read_deadline, fresh=True)
+                if self.clock() > read_deadline:
+                    raise DeadlineError("recovery read consumed command reserve")
+                if expected_mode is not None and state.mode != expected_mode:
+                    raise UnsafeState("competing mode prevents recovery confirmation")
+                return state
+            except (OSError, EOFError) as error:
+                phase = self._failure_phase()
+                self.io_phase = phase
+                observed = getattr(self.session, "last_system", None)
+                if (
+                    observed is not None
+                    and expected_mode is not None
+                    and observed[0] != expected_mode
+                ):
+                    raise UnsafeState("competing mode observed before transport failure") from None
+                self._event(
+                    stage + "_read_transport_failed",
+                    attempt=attempt,
+                    phase=phase,
+                    reason=type(error).__name__,
+                )
+                self._close()
+                if attempt == RECOVERY_READ_ATTEMPTS:
+                    raise
+                if self.clock() + RECOVERY_READ_PAUSE >= read_deadline:
+                    raise DeadlineError("recovery read reserve exhausted") from None
+                self.sleeper(RECOVERY_READ_PAUSE)
+        raise AssertionError("unreachable recovery read loop")
+
     def _command(self, channels, mode, deadline, stage):
-        """One deliberate command sequence; no retries and no echoed-read confirmation."""
+        """Send once; only fresh cleanup readback may retry after a queried barrier."""
         self._check_stop()
         if deadline - self.clock() < WRITE_RECOVERY_MARGIN:
             raise DeadlineError("too little time remains to send and verify a command")
@@ -415,17 +515,44 @@ class ValidationWorker:
         echoes.append(command)
         self.session.quarantine(WRITE_DRAIN_PAUSE, deadline, tuple(echoes))
         self._check_stop()
-        # Keep the write connection alive until a queried system reply proves
-        # the requested mode/profile. Only a new connection can confirm channels.
-        actual_mode, controller, version, count = self.session.system(deadline)
+        # Keep the write connection alive through an explicit system query.
+        # If its reply is lost during cleanup, a fresh full-state read can still
+        # confirm the already-sent command. Never resend any command here.
+        try:
+            actual_mode, controller, version, count = self.session.system(deadline)
+        except (OSError, EOFError) as error:
+            if not self.cleaning:
+                raise
+            self._event(
+                stage + "_system_barrier_transport_failed",
+                reason=type(error).__name__,
+                phase=self._failure_phase(),
+            )
+            reserve = RECOVERY_MODE_RESERVE if mode != self.baseline.mode else 0.0
+            return self._fresh_recovery_read(
+                deadline, reserve=reserve, stage=stage, expected_mode=mode
+            )
         if (controller, version, count) != self.config.profile or actual_mode != mode:
             raise UnsafeState("queried system barrier did not confirm the requested mode")
         self._event(stage + "_system_barrier_confirmed", mode=mode)
+        if self.cleaning:
+            reserve = RECOVERY_MODE_RESERVE if mode != self.baseline.mode else 0.0
+            return self._fresh_recovery_read(
+                deadline, reserve=reserve, stage=stage, expected_mode=mode
+            )
         return self._read(deadline, fresh=True)
 
     def _recover(self, deadline):
         self._event("recovery_started")
-        current = self._read(deadline, fresh=True)
+        expected_mode = (
+            1 if self.baseline.mode == 1 or self.report["experiment"] == "PASS" else None
+        )
+        current = self._fresh_recovery_read(
+            deadline,
+            reserve=RECOVERY_COMMAND_RESERVE,
+            stage="recovery_guard",
+            expected_mode=expected_mode,
+        )
         self._event("recovery_guard_confirmed", state=asdict(current))
         baseline = self.baseline
         if baseline.mode == 1 and current.mode != 1:
@@ -500,7 +627,9 @@ class ValidationWorker:
             self.report["experiment"] = (
                 "FAIL" if self.excursion_started is not None else "NOT_TESTED"
             )
-            self._event("experiment_failed", reason=type(error).__name__)
+            self._event(
+                "experiment_failed", reason=type(error).__name__, phase=self._failure_phase()
+            )
         finally:
             if self.excursion_started is not None:
                 self.cleaning = True
@@ -513,7 +642,11 @@ class ValidationWorker:
                     self.report["recovery"] = "PASS" if recovery_ok else "FAIL"
                 except BaseException as error:
                     self.report["recovery"] = "FAIL"
-                    self._event("recovery_unconfirmed", reason=type(error).__name__)
+                    self._event(
+                        "recovery_unconfirmed",
+                        reason=type(error).__name__,
+                        phase=self._failure_phase(),
+                    )
                 finally:
                     self._close()
             else:
