@@ -1,4 +1,4 @@
-# Test-dev runbook — Task 002
+# Test-dev runbook
 
 Task 002 is complete; its recorded authorization covered Manager deployment and
 the device-free lifecycle. Reuse this procedure for future work only within the
@@ -9,7 +9,7 @@ into source, images, the Manager, browser traces, or published artifacts.
 
 ## Access and backup gate
 
-1. Preserve local/remote changes and work from current main on a Task 002 branch.
+1. Preserve local/remote changes and work from current main on the current task branch.
 2. Run `.venv/bin/python tooling/check_access.py --ssh` once, read-only. Its
    contract stays unchanged; deployment uses separate tooling. Password login
    and token-to-login binding are unnecessary when token/key access works.
@@ -95,5 +95,6 @@ Run local synthetic checks, actual amd64 App/image tests, redacted publication
 scans, and completed hosted CI. Publish actual versioned release artifacts with
 aligned manifests/digests and concise install/use/recovery instructions. Do not
 invent a publishing license. Retain exact versions, release/commit, lifecycle
-and recovery results privately; commit sanitized evidence only. Task 003 remains
-out of scope. Do not report software ready from tests or CI alone.
+and recovery results privately; commit sanitized evidence only. Task 003 continuation follows these gates for its expressly authorized test-dev
+changes. Lamp controls additionally require its reviewed autonomous bounded
+recovery procedure. Do not report software ready from tests or CI alone.

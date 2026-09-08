@@ -1,10 +1,57 @@
 # Task 003 — Aquarius Plant LED
 
-Status: **BLOCKED — hardware control and installed catalog delivery**.
+Status: **IN PROGRESS — authorized continuation to working installed controls**.
 This task follows the owner's revision-2 assignment;
 the original package, device configuration and packet evidence are private.
 
-## Baseline and authorization
+## Current continuation scope
+
+The owner's continuation resumes merged main
+`7066bd6425321766372607c738f6d69b941481ab` (PR #6) on
+`task/003-complete-aquarius`. The private continuation supersedes conflicting
+no-Manager-rebuild and indefinite write-freeze wording below. Targeted built-in
+remote catalog refresh, App build/update/restart, integration deployment/native
+configuration and necessary gated test-dev Core restarts are authorized.
+Completion requires working installed controls, all six channels and explicit
+Manual/Automatic validation, lifecycle acceptance and final owner-ready setup.
+
+Renewed lamp controls require offline recovery/failure tests and documented
+independent review first. A detached HA-side worker must own local monotonic
+budgets and guarded cleanup, reserve recovery time within the ten-second bound,
+and avoid blindly restoring over competing changes. A failed experiment pauses
+writes for recovery/repair; independent safe work continues. The old read-only
+release remains immutable. Historical evidence below records the previous
+assignment and is not a current authorization restriction.
+
+## Continuation investigation and deployment gates
+
+- **PASS:** current protected API/SSH access; no repeated bootstrap or provisioning.
+- **PASS:** fresh encrypted backup includes HA configuration/database, Terminal &
+  SSH and Manager data. Download and isolated decryption/readability verified;
+  live restore is NOT_TESTED. Recovery key and all archives remain private.
+- **PASS:** current startup review found no automations/scripts/scenes or KNX
+  entity/expose/time-server writers. Existing KNX entry is loaded; immutable
+  configuration/project baseline retained privately for restart comparisons.
+- **PASS, read-only hardware:** ten native HA-side TCP refreshes using the actual
+  client returned a stable Automatic-mode baseline. Each complete system/channel
+  pair took 0.322–0.520 seconds, including the 200 ms query separation; TCP
+  connection time was 0.002–0.113 seconds. No write command was sent.
+- **PASS, synthetic process check:** a detached HA-side Python process continued
+  after its launching SSH session returned in 0.13 seconds. The temporary runtime
+  uses signature-verified Alpine packages extracted into a private temporary
+  directory; no package database, App options, protection or SSH configuration
+  was changed.
+
+The historical harness ran its decision logic on the workstation, terminated
+its netcat subprocess after a 250 ms close allowance, and did not perform
+restoration in the exception/finally path. These are established harness defects.
+The response timeout after writing and the first failed mode-restoration sequence
+do not establish a firmware incompatibility. Native TCP read-only measurements
+separate connection setup cost from the old SSH/netcat adapter; post-write
+processing still needs reviewed, bounded validation. No new lamp write has yet
+been authorized by the procedure's offline/review gate.
+
+## Historical revision-2 baseline and authorization
 
 Task 002 is complete at main commit `3ce396c27296e33473dbbbeebe68bff034d8203d`.
 The fetched remote matched the clean checkout; the final
@@ -22,7 +69,7 @@ stop writes. Core restarts require a fresh encrypted, privately downloaded and
 readable backup plus the startup/KNX safety gate. Other devices, provisioning,
 network policy, infrastructure and production remain outside scope.
 
-## Current evidence
+## Historical revision-2 evidence
 
 | Check | Result | Scope |
 | --- | --- | --- |
@@ -51,7 +98,7 @@ Actual readback identified controller bytes `(28, 30)`, raw version bytes
 does not match. These are raw fields, not an invented firmware name or stable
 hardware serial. Raw frames and actual settings remain private.
 
-## Distribution constraint under review
+## Historical catalog-delivery constraint
 
 Manager 0.1.1 reads its built-in catalog from the installed App's bundled file.
 Its refresh action downloads extra-source metadata, but does not download the
