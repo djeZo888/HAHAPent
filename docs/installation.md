@@ -2,6 +2,8 @@
 
 Use Home Assistant's Supervisor-managed App store on an amd64 system running
 Home Assistant 2026.9.1 or later. The task report identifies the exact tested release.
+The current Manager release candidate is 0.1.1; an installed 0.1.0 candidate is
+updated through the normal App store update action, preserving its `/data` state.
 Add `https://github.com/djeZo888/HAHAPent` as an App repository, install **HAHAPent
 Suite Manager**, start it, and open its Ingress interface as an administrator.
 There is no LAN port, owner-token option, or developer-computer dependency.

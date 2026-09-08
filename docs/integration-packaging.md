@@ -50,8 +50,8 @@ URLs; its compatibility is conservatively limited to HA 2026.9.1 until further
 releases are tested.
 
 The immutable `test-fixtures-v1` release allows testing the Manager before its
-final release is cut. The final Manager `v0.1.0` release may attach the same fixture
-ZIP bytes; `--release-tag v0.1.0` generates corresponding catalog URLs without
+final release is cut. The final Manager `v0.1.1` release may attach the same fixture
+ZIP bytes; `--release-tag v0.1.1` generates corresponding catalog URLs without
 changing artifact bytes. Never move a tested release tag to hide subsequent fixes.
 Actual published commits, asset digests and live evidence belong in
 [Task 002](../tasks/002-suite-manager.md).

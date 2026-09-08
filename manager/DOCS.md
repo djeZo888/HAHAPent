@@ -47,7 +47,7 @@ use a cold backup so these files are captured while the Manager is stopped.
 
 # Limits
 
-Version 0.1.0 supports amd64, explicit individual module changes, and declared
+Version 0.1.1 supports amd64, explicit individual module changes, and declared
 dependency checks. It has no dependency solver or automatic module updates.
 Integrations run independently in Home Assistant after installation. The Manager
 does not update Home Assistant, firmware, or infrastructure. License selection

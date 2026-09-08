@@ -1,5 +1,5 @@
 name: HAHAPent Suite Manager
-version: "0.1.0"
+version: "0.1.1"
 slug: hahapent
 description: Administrator-managed integration catalog, installation, and recovery
 url: https://github.com/djeZo888/HAHAPent
@@ -8,6 +8,7 @@ arch:
 startup: application
 boot: auto
 init: true
+timeout: 30
 homeassistant: "2026.9.1"
 homeassistant_api: true
 ingress: true
