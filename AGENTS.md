@@ -9,8 +9,10 @@ installable App manifest. License selection is pending.
 ## Credentials and privacy
 Resolve the private profile at `~/.config/hahapent/bootstrap.json`, then its
 `credential_file`; the default credential location is
-`~/.config/hahapent/secrets/credentials.txt`. Never copy credentials into a
-checkout or worktree. Read them programmatically, never as shell code. Never
+`~/.config/hahapent/secrets/credentials.txt`. These paths persist across all
+project tasks and worktrees. Preserve their contents; do not regenerate or
+delete them during ordinary cleanup. Never copy credentials into a checkout
+or worktree. Read them programmatically, never as shell code. Never
 print credential values, secret-derived fingerprints, authorization headers,
 raw HTTP error bodies, or sensitive configuration. Keep private files at 0600
 and private directories at 0700. Public source uses generic example targets.
@@ -42,6 +44,12 @@ Never force-push or rewrite shared history. Use a task branch after establishing
 main and preserve any existing merge policy. Do not infer tested capability from
 an API permission flag or queued CI job. Report PASS, FAIL, BLOCKED, NOT_TESTED,
 AVAILABLE_NOT_EXERCISED, or NOT_REQUIRED honestly.
+
+Use `.venv/bin/python tooling/check_access.py` for read-only API checks, add
+`--ssh` for read-only deployment access, or explicitly use `--file-probe` for
+the authorized isolated marker round trip. Test-dev credentials are never
+available to public CI. A new task must not inherit authority to mutate HA
+merely from a previous task's completed write probe.
 
 Tested commands and evidence are recorded in `docs/development.md` and
 `tasks/001-access-and-repository.md` as checks complete. Public CI must use only

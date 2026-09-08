@@ -1,0 +1,11 @@
+{
+  "$schema": "./schemas/catalog-v1.schema.json",
+  "schema_version": 1,
+  "status": "draft",
+  "source": {
+    "id": "hahapent",
+    "name": "HAHAPent",
+    "repository_url": "https://github.com/djeZo888/HAHAPent"
+  },
+  "modules": []
+}
