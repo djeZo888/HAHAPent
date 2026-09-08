@@ -1,7 +1,9 @@
 # Aquarius autonomous validation worker review
 
-Review date: 2026-09-09. Result: **PASS — offline gate for the bounded
-direct-TCP plan below**. This is an independent source and synthetic-test
+Review date: 2026-09-09. Historical result: **PASS — offline gate for the bounded
+direct-TCP plan below; superseded after the Channel F recovery failure**.
+Renewed experiments remain paused until the repair review below passes.
+This is an independent source and synthetic-test
 review, not an actual-lamp validation result. The coordinator retains all
 operational authority. The module 0.1.1 candidate remains read-only with an
 empty shipped write-profile allowlist.
@@ -120,3 +122,25 @@ unjustified commands and report recovery as unconfirmed. This review covers
 the direct-TCP worker only: a separate HA-service harness must account for
 service admission, cancellation, and possible in-flight operations; an HTTP
 timeout alone does not prove cancellation inside Home Assistant.
+
+## Channel F failure and recovery repair review
+
+Status: **PENDING — no renewed experiment gate yet**.
+
+The original reviewed worker passed actual bounded A–E checks but failed the
+Channel F recovery bound. The changed state was independently confirmed at
+0.716 seconds. The first fresh recovery guard read then timed out after
+0.8 seconds; the worker stopped at 1.518 seconds, abandoning the remaining
+cleanup reserve. A later deliberate, freshly guarded restoration took
+1.887 seconds and confirmed the original channels and Automatic mode. The
+estimated total excursion was 53.16 seconds, exceeding the ten-second bound.
+That estimate is not a monotonic cross-process measurement. The complete
+historical outcome remains in [Task 003](../tasks/003-led-integration.md).
+
+The earlier 26-test gate did not cover a transient recovery guard timeout
+followed by a successful read within the reserved cleanup time. The repair
+must spend the bounded reserve on read-only recovery attempts while preserving
+time for justified restoration and independent confirmation. It must not retry
+uncertain writes, relax profile/competing-state guards, or extend the ten-second
+limit. The repaired source hashes, independent scenario evidence, and renewed
+gate will be appended after review.

@@ -144,6 +144,18 @@ remains unchanged. Read-only lifecycle order will update its installed code to
 0.1.1 before native configuration, then verify rollback using that existing
 read-only configuration before removal.
 
+## Read-only lifecycle artifact 0.1.1
+
+Source `7a640b3df6e47056554f19254493fac6fdfcdfdc` fixes the native form and
+[completed hosted CI](https://github.com/djeZo888/HAHAPent/actions/runs/34289891050).
+[Immutable 0.1.1 prerelease](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.1)
+contains the deterministic native ZIP, catalog snapshot and SHA256SUMS.
+ZIP SHA-256 is `079e4c037c68ff7ea8d67c1d6011f49bab2aaa59c85576ec4d903a58a2536588`.
+All three assets were downloaded without credentials and matched their published
+bytes; actual Manager archive validation and private-value scans passed. Its
+shipped write allowlist is empty. This is an intermediate read-only lifecycle
+version, not Task 003 completion or the final owner-ready control release.
+
 ## Historical revision-2 baseline and authorization
 
 Task 002 is complete at main commit `3ce396c27296e33473dbbbeebe68bff034d8203d`.
