@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "draft",
+  "source": {
+    "id": "synthetic-source",
+    "name": "Synthetic offline fixture",
+    "repository_url": "https://example.invalid/synthetic"
+  },
+  "modules": [
+    {
+      "id": "synthetic-helper",
+      "name": "Synthetic helper",
+      "integration_domain": "synthetic_helper",
+      "version": "1.2.3",
+      "home_assistant": {
+        "min_version": "2026.1.0",
+        "max_version_exclusive": "2027.1.0"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://example.invalid/synthetic/helper-1.2.3.zip",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "format": "zip"
+      },
+      "license": {
+        "expression": "LicenseRef-Synthetic-Example",
+        "url": "https://example.invalid/synthetic/license"
+      },
+      "provenance": {
+        "repository_url": "https://example.invalid/synthetic",
+        "revision": "0000000000000000000000000000000000000000",
+        "source_path": "modules/synthetic-helper"
+      },
+      "restart": {"home_assistant": "unknown", "manager": "not_required"}
+    },
+    {
+      "id": "synthetic-consumer",
+      "name": "Synthetic consumer",
+      "integration_domain": "synthetic_consumer",
+      "version": "2.0.0-rc.1",
+      "home_assistant": {"min_version": "2026.2.0"},
+      "dependencies": [
+        {"source_id": "synthetic-source", "module_id": "synthetic-helper", "version": "1.2.3"}
+      ],
+      "artifact": {
+        "url": "https://example.invalid/synthetic/consumer-2.0.0-rc.1.zip",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "format": "zip"
+      },
+      "license": {
+        "expression": "LicenseRef-Synthetic-Example",
+        "url": "https://example.invalid/synthetic/license"
+      },
+      "provenance": {
+        "repository_url": "https://example.invalid/synthetic",
+        "revision": "1111111111111111111111111111111111111111",
+        "source_path": "modules/synthetic-consumer"
+      },
+      "restart": {"home_assistant": "required", "manager": "not_required"}
+    }
+  ]
+}

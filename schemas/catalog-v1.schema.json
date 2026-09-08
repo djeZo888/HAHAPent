@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HAHAPent draft catalog v1",
+  "description": "An offline metadata contract, not installation or source trust authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "source",
+    "modules"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "const": "draft"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/module"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?![\\s\\S])",
+      "maxLength": 100
+    },
+    "https_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://",
+      "maxLength": 2048
+    },
+    "version": {
+      "type": "string",
+      "description": "Independent module SemVer version, including optional prerelease and build metadata.",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?![\\s\\S])"
+    },
+    "ha_version": {
+      "type": "string",
+      "pattern": "^20[0-9]{2}\\.(?:[1-9]|1[0-2])\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "repository_url"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "repository_url": {
+          "$ref": "#/$defs/https_url"
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "module_id",
+        "version"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "module_id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "integration_domain",
+        "version",
+        "home_assistant",
+        "dependencies",
+        "artifact",
+        "license",
+        "provenance",
+        "restart"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "integration_domain": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(?![\\s\\S])",
+          "maxLength": 100
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "home_assistant": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min_version"
+          ],
+          "properties": {
+            "min_version": {
+              "$ref": "#/$defs/ha_version"
+            },
+            "max_version_exclusive": {
+              "$ref": "#/$defs/ha_version"
+            }
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dependency"
+          },
+          "uniqueItems": true
+        },
+        "artifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "sha256",
+            "format"
+          ],
+          "properties": {
+            "url": {
+              "$ref": "#/$defs/https_url"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "format": {
+              "const": "zip"
+            }
+          }
+        },
+        "license": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "expression",
+            "url"
+          ],
+          "properties": {
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "url": {
+              "$ref": "#/$defs/https_url"
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository_url",
+            "revision",
+            "source_path"
+          ],
+          "properties": {
+            "repository_url": {
+              "$ref": "#/$defs/https_url"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}(?![\\s\\S])"
+            },
+            "source_path": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*(?![\\s\\S])",
+              "maxLength": 500
+            }
+          }
+        },
+        "restart": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "home_assistant",
+            "manager"
+          ],
+          "properties": {
+            "home_assistant": {
+              "enum": [
+                "required",
+                "not_required",
+                "unknown"
+              ]
+            },
+            "manager": {
+              "enum": [
+                "required",
+                "not_required",
+                "unknown"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Full-string patterns end with a negative any-character lookahead to reject trailing newlines as well."
+}
