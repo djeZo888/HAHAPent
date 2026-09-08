@@ -127,7 +127,7 @@ class ManagerBundleTests(unittest.TestCase):
                 for target in node.targets
             )
         )
-        self.assertEqual(version, "0.1.1")
+        self.assertEqual(version, "0.1.2")
         self.assertIn(f'version: "{version}"\n', (ROOT / "manager/config.yaml").read_text())
         self.assertIn(f"ARG BUILD_VERSION={version}\n", (ROOT / "manager/Dockerfile").read_text())
         frozen = json.loads((ROOT / "manager/test-catalog.json").read_text())

@@ -49,7 +49,23 @@ The response timeout after writing and the first failed mode-restoration sequenc
 do not establish a firmware incompatibility. Native TCP read-only measurements
 separate connection setup cost from the old SSH/netcat adapter; post-write
 processing still needs reviewed, bounded validation. No new lamp write has yet
-been authorized by the procedure's offline/review gate.
+been executed; the offline/review gate remains pending.
+
+## Manager 0.1.2 source checkpoint
+
+Built-in Refresh now securely fetches canonical repository metadata, validates
+identity/schema/features, and atomically persists a bounded cache before use.
+Startup revalidates the cache against bundled identity, with a bundled fallback.
+Failures retain usable metadata and show source freshness/errors; refreshing
+never installs code or restarts HA. Existing extra-source and ownership gates
+are unchanged. Independent review caught a cache-envelope depth-limit issue;
+full-envelope validation and a regression test corrected it before release.
+
+Coordinator checks: **108 Manager tests PASS**, including ten new catalog/cache
+cases; Manager/affected-test Ruff, catalog validation and bundle checks **PASS**.
+These are synthetic checks. App update and live cache persistence remain pending.
+The authorization checkpoint `5ee5cf3` matched its remote SHA and
+[completed CI successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34287526405).
 
 ## Historical revision-2 baseline and authorization
 

@@ -30,10 +30,11 @@ def fsync_dir(path):
         os.close(descriptor)
 
 
-def atomic_json(path, value):
+def atomic_json(path, value, *, compact=False):
     path = Path(path)
     no_symlink(path)
-    data = (json.dumps(value, ensure_ascii=True, indent=2, allow_nan=False) + "\n").encode()
+    options = {"separators": (",", ":")} if compact else {"indent": 2}
+    data = (json.dumps(value, ensure_ascii=True, allow_nan=False, **options) + "\n").encode()
     temporary = path.with_name("." + path.name + "." + uuid.uuid4().hex)
     try:
         descriptor = os.open(str(temporary), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)

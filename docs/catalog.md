@@ -1,6 +1,6 @@
 # Catalog and persistent JSON contract
 
-HAHAPent 0.1.1 reads three independent JSON v1 contracts: source catalogs,
+HAHAPent 0.1.2 reads three independent JSON v1 contracts: source catalogs,
 Manager settings and the installed registry. Manager releases and integration
 versions are separate SemVer values. The Manager uses its bundled JSON Schemas;
 a document's `$schema` never causes a network request.
@@ -10,9 +10,9 @@ contains byte-identical schema/catalog copies in `manager/`, maintained by
 `python tooling/sync_manager_bundle.py`; CI checks for drift. The normal
 `hahapent.json` includes the explicitly read-only Aquarius prerelease candidate;
 its description and module documentation identify the blocked control/lifecycle work.
-Manager 0.1.1 reads this catalog from its installed image, so publishing a new
-canonical catalog does not update that installed copy. An authorized App update
-or future supported built-in refresh capability is needed for delivery.
+Manager 0.1.2 can refresh this source from canonical GitHub metadata and persists
+its validated last-known-good catalog. Older Manager 0.1.1 reads only its installed
+bundle and needs the targeted App update before it can discover later module releases.
 The device-free Task 002 fixture has a separate catalog and explicit test-mode
 switch. Enabling a catalog or adding a source never installs its code.
 
@@ -95,6 +95,33 @@ read from that repository's `HEAD/hahapent.json`; module code always comes from
 selected versioned release artifacts. Refreshing metadata never updates code.
 A source may be removed while its code remains installed. Offline or removed
 sources do not erase the registry, documentation, previous code or removal option.
+
+## Built-in refresh and cache
+
+The built-in source identity and repository are anchored to the bundled catalog.
+An explicit **Refresh catalogs** downloads that exact repository's
+`HEAD/hahapent.json` through the existing bounded HTTPS downloader. Source identity,
+repository/artifact binding, schema and Manager feature requirements must all
+validate before metadata replaces the last usable catalog. This operation never
+installs code or restarts HA. Extra-source refresh and duplicate-source guards
+remain unchanged; the built-in repository cannot be added again as an extra source.
+
+A successful download is persisted atomically with mode `0600` in the App's
+`/data/builtin-catalog-cache.json` before activation. The cache has an internal
+v1 envelope containing exactly `schema_version`, UTC `fetched_at`, and `catalog`.
+The complete envelope obeys the existing JSON byte/depth/node limits. On startup,
+the cache is read and revalidated against the bundled identity without a remote
+built-in fetch; missing or unusable cache data falls back to the bundled catalog.
+Invalid, unsafe, or future cache files remain unchanged for explicit recovery.
+
+The source status reports `catalog_origin` (`bundled`, `cache`, or `remote`),
+`refresh_status` (`not_checked`, `success`, or `failed`), the persisted
+`last_successful_refresh`, and the current session's `last_refresh_attempt`.
+Sanitized `error` and `cache_error` fields identify failures. Cached metadata remains
+available after a failed download; an old timestamp does not establish freshness.
+Unknown schemas/features, malformed metadata, identity changes, and cache-write
+failures never replace the previously usable catalog. Sources renders these
+details and a failed refresh also shows a notice in the catalog view.
 
 ## Capability and extension rules
 

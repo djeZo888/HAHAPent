@@ -9,7 +9,7 @@ control test failed; the original lamp state was restored and further writes sto
 | --- | --- | --- |
 | [001: access and repository](../tasks/001-access-and-repository.md) | Safe repository bootstrap, synthetic checks, sanitized access evidence, verified Git/CI checkpoints | Complete; preserve its historical report |
 | [002: Suite Manager](../tasks/002-suite-manager.md) | App 0.1.1, trusted catalogs, owned code lifecycle, recovery, and device-free fixture | Complete; release 0.1.1 published, Manager healthy and installed fixture cleaned |
-| [003: LED integration](../tasks/003-led-integration.md) | Aquarius Plant LED read-only candidate | Safe bounded control validation and authorized installed-catalog delivery remain blocked |
+| [003: LED integration](../tasks/003-led-integration.md) | Working Aquarius Plant LED installation | Continuation in progress: targeted Manager refresh, reviewed recovery, all-channel validation and final native setup |
 
 Task 002 exercised install A, native configuration, update B, rollback A, native
 removal, and code uninstall through the actual Ingress interface. It also verified
@@ -22,7 +22,9 @@ Task 003 has published independently packaged read-only code and synthetic
 protocol/native HA tests. Actual lamp reads pass, but the first write test failed
 its reconnect/restoration bound. No controller write profile is enabled. Manager
 0.1.1 embeds its catalog; delivering the new built-in entry to that installed App
-requires an authorized packaging update or a supported remote refresh capability.
+is addressed by the continuation’s authorized Manager 0.1.2 remote refresh.
+The same continuation authorizes corrected bounded tests after offline recovery
+tests and independent code review. The old read-only release remains immutable.
 Live module setup, update/rollback/removal and independence acceptance remain untested.
 
 License selection remains pending. Optional third-party sources require an

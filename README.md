@@ -11,12 +11,13 @@ installation, updates, removal, and code recovery.
 | --- | --- | --- |
 | [001](tasks/001-access-and-repository.md) | Access and repository bootstrap | Complete; historical evidence retained |
 | [002](tasks/002-suite-manager.md) | Installable Suite Manager and safe module lifecycle | Complete; tested release 0.1.1 installed and final cleanup verified |
-| [003](tasks/003-led-integration.md) | Aquarius Plant LED | Read-only candidate; bounded control test failed and installed catalog delivery is blocked |
+| [003](tasks/003-led-integration.md) | Aquarius Plant LED | Continuation in progress: catalog delivery, corrected bounded control validation and installed acceptance |
 
 [Released Manager 0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/v0.1.1) targets amd64 and exposes no LAN management port.
 The [Aquarius module](modules/aquarius_plant_led/README.md) is a read-only
 prerelease candidate; it is not a completed control integration. Manager 0.1.1
-has an embedded catalog and cannot receive this new module through Refresh alone.
+has an embedded catalog; the authorized continuation adds validated remote catalog
+refresh in Manager 0.1.2 and repairs control validation before a working release.
 A separate device-free A/B integration supports acceptance testing. License
 selection is pending.
 

@@ -71,6 +71,8 @@ async function poll() {
     else {
       await reload();
       if (result.job?.state === "failed") notice(result.job.error?.message || "Operation failed.", true);
+      else if (result.job?.operation === "refresh" && state.data.sources?.some((source) => source.error || source.cache_error))
+        notice("Some catalogs could not be refreshed. Open Sources for the error and the retained catalog's last successful refresh.", true);
     }
   } catch (error) {
     state.busy = false;
@@ -297,8 +299,20 @@ function renderSources() {
     const description = el("div");
     description.append(el("strong", source.name || id), el("p", source.repository_url || source.repository || "Bundled HAHAPent catalog"));
     const actions = el("div", "", "source-actions");
-    const unavailable = source.available === false || source.status === "offline" || !!source.error;
-    actions.append(el("span", unavailable ? "Unavailable · installed code retained" : source.status || "Available", `badge ${unavailable ? "warning" : ""}`));
+    const unavailable = source.available === false || source.status === "offline";
+    const refreshFailed = !!source.error || !!source.cache_error;
+    let availability = unavailable ? "Unavailable · installed code retained" : source.status || "Available";
+    if (source.catalog_origin) {
+      const origin = {bundled: "Bundled catalog", cache: "Cached catalog", remote: "Fetched catalog"}[source.catalog_origin] || "Catalog";
+      availability = `${origin} · ${source.refresh_status === "success" ? "refresh succeeded" : source.refresh_status === "failed" ? "refresh failed" : "refresh to check for updates"}`;
+      description.append(el("p", source.last_successful_refresh
+        ? `Last successful refresh: ${source.last_successful_refresh}`
+        : "No successful remote refresh recorded."));
+      if (source.last_refresh_attempt) description.append(el("p", `Last attempt: ${source.last_refresh_attempt}`));
+    }
+    if (source.error) description.append(el("p", `Refresh error: ${source.error}`, "muted"));
+    if (source.cache_error) description.append(el("p", `Cache error: ${source.cache_error}. The existing cache file has been preserved.`, "muted"));
+    actions.append(el("span", availability, `badge ${unavailable || refreshFailed ? "warning" : ""}`));
     const extras = state.data.settings?.extra_repositories || [];
     if (extras.some((extra) => (extra.source_id || extra.id) === id)) {
       actions.append(button("Remove source", async () => {
