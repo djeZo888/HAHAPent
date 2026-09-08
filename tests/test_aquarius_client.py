@@ -75,10 +75,36 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_explicit_modes_are_verified_on_fresh_read_connection(self):
         await self.client.refresh()
-        for mode in (0, 1, 8):
+        for mode in (0, 1):
             state = await self.client.set_mode(mode)
             self.assertEqual(state.system.mode_raw, mode)
-        self.assertEqual(self.lamp.writes, [protocol.mode_frame(mode) for mode in (0, 1, 8)])
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(mode) for mode in (0, 1)])
+
+    async def test_shipped_profile_allows_explicit_manual_and_automatic_only(self):
+        self.profiles.stop()
+        self.lamp.controller = (28, 30)
+        self.lamp.version = (26, 29)
+        self.lamp.mode = 0
+        state = await self.client.refresh()
+        self.assertTrue(state.system.write_supported)
+        self.assertEqual(self.lamp.writes, [])
+        changed = await self.client.set_channel(0, 9, expected_state=state)
+        self.assertEqual(changed.channels, (9, 20, 30, 40, 50, 60))
+        self.assertEqual(changed.system.mode_raw, 1)
+        self.assertEqual((await self.client.set_mode(0)).system.mode_raw, 0)
+        frames = list(self.lamp.frames)
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.set_mode(8)
+        self.assertEqual(self.lamp.frames, frames)
+
+    async def test_shutdown_origin_is_readable_but_blocks_channels_and_mode(self):
+        self.lamp.mode = 8
+        for action in (lambda: self.client.set_channel(0, 9), lambda: self.client.set_mode(0)):
+            state = await self.client.refresh()
+            self.assertEqual(state.system.mode_raw, 8)
+            with self.assertRaises(client.UnsupportedDeviceError):
+                await action()
+        self.assertEqual(self.lamp.writes, [])
 
     async def test_unknown_mode_is_readable_but_blocks_any_write(self):
         self.lamp.mode = 255
@@ -103,8 +129,9 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
         for index in (-1, 6, True, 1.0):
             with self.subTest(index=index), self.assertRaises(protocol.ProtocolError):
                 await self.client.set_channel(index, 10)
-        with self.assertRaises(protocol.ProtocolError):
-            await self.client.set_mode(2)
+        for mode in (2, 8, True, 1.0):
+            with self.assertRaises(protocol.ProtocolError):
+                await self.client.set_mode(mode)
         self.assertEqual(self.lamp.connections, 0)
 
     async def test_first_write_requires_a_successful_refresh(self):

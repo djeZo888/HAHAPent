@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import CHANNEL_LABELS
 from .coordinator import AquariusCoordinator
 from .entity import AquariusEntity
+from .protocol import SUPPORTED_CONTROL_MODES
 
 PARALLEL_UPDATES = 0
 
@@ -49,6 +50,8 @@ class AquariusChannel(AquariusEntity, NumberEntity):
             return {
                 "adjustment_action": "Read-only: controller profile is not validated for writes"
             }
+        if self.coordinator.data.system.mode_raw not in SUPPORTED_CONTROL_MODES:
+            return {"adjustment_action": "Read-only: the current operating mode is unsupported"}
         return {"adjustment_action": "Sets and saves manual output; pauses the automatic program"}
 
     async def async_set_native_value(self, value: float) -> None:

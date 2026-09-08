@@ -33,12 +33,12 @@ class AquariusDiagnostic(AquariusEntity, SensorEntity):
     def __init__(self, coordinator, key: str) -> None:
         super().__init__(coordinator, key)
         self._key = key
-        self._attr_name = DIAGNOSTICS[key]
         if key == "write_support":
             self._attr_translation_key = "write_support"
-            self._attr_name = None
             self._attr_device_class = SensorDeviceClass.ENUM
             self._attr_options = ["read_only", "validated_profile"]
+        else:
+            self._attr_name = DIAGNOSTICS[key]
 
     @property
     def native_value(self) -> int | str:

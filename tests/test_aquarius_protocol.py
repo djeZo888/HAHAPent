@@ -94,6 +94,22 @@ class AquariusProtocolTests(unittest.TestCase):
             for kwargs in ({"version": (2, 6)}, {"controller": (0x12, 0x3D)}, {"count": 7}):
                 self.assertFalse(protocol.parse_system(system_reply(**kwargs)).write_supported)
 
+    def test_release_enables_only_the_verified_profile_and_two_control_modes(self):
+        self.assertEqual(protocol.VERIFIED_WRITE_PROFILES, frozenset({((28, 30), (26, 29), 6)}))
+        self.assertEqual(protocol.SUPPORTED_CONTROL_MODES, frozenset({0, 1}))
+        observed = {"controller": (28, 30), "version": (26, 29), "count": 6}
+        self.assertTrue(protocol.parse_system(system_reply(**observed)).write_supported)
+        for changed in (
+            {"controller": (28, 31)},
+            {"version": (26, 30)},
+            {"count": 3},
+        ):
+            with self.subTest(changed=changed):
+                self.assertFalse(
+                    protocol.parse_system(system_reply(**{**observed, **changed})).write_supported
+                )
+        self.assertFalse(protocol.parse_system(system_reply()).write_supported)
+
     def test_malformed_or_wrong_replies_are_rejected(self):
         valid = system_reply()
         for frame in (

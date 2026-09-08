@@ -49,7 +49,8 @@ The response timeout after writing and the first failed mode-restoration sequenc
 do not establish a firmware incompatibility. Native TCP read-only measurements
 separate connection setup cost from the old SSH/netcat adapter; post-write
 processing still needs reviewed, bounded validation. No new lamp write has yet
-been executed; the offline/review gate remains pending.
+been executed at this investigation checkpoint. Subsequent reviewed recovery
+procedures and actual bounded results are recorded below.
 
 ## Manager 0.1.2 source checkpoint
 
@@ -63,7 +64,8 @@ full-envelope validation and a regression test corrected it before release.
 
 Coordinator checks: **108 Manager tests PASS**, including ten new catalog/cache
 cases; Manager/affected-test Ruff, catalog validation and bundle checks **PASS**.
-These are synthetic checks. App update and live cache persistence remain pending.
+These are synthetic source checks; actual App update and cache persistence
+results are recorded below.
 The authorization checkpoint `5ee5cf3` matched its remote SHA and
 [completed CI successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34287526405).
 
@@ -79,7 +81,8 @@ and successful-refresh timestamp. Protection and API/network permissions remain
 unchanged. Read-only module 0.1.0 was then installed through the actual Manager
 UI. The gated Core restart passed configuration checks and returned with Core
 running, KNX loaded/connected and unchanged startup/project baselines. Native
-module configuration and remaining lifecycle actions are pending.
+module configuration and remaining lifecycle actions were pending at that
+checkpoint; subsequent 0.1.1 native setup results are recorded below.
 
 The [independent recovery review](../docs/aquarius-validation-review.md) and
 26 offline worker tests preceded renewed controls. The exact reviewed worker
@@ -94,14 +97,15 @@ Home Assistant entity-service tests and optical observations.
 | C | -1 point | PASS | PASS | 2.462 s |
 | D | +1 point | PASS | PASS | 2.519 s |
 | E | +1 point | PASS | PASS | 2.318 s |
-| F | +1 point | PASS | FAIL within bound; later deliberate recovery PASS | about 53.16 s total |
+| F01 | +1 point | PASS | FAIL within bound; later deliberate recovery PASS | about 53.16 s total |
+| F02, repaired worker | +1 point | PASS | PASS | 2.653872 s |
 
 Each A–E test independently read the exact changed vector and Manual mode,
 restored and confirmed all original channels, then separately restored and
 confirmed Automatic. Subsequent read-only checks passed. Positive one-point
 changes were used where the current channel did not permit a reduction.
 
-F's changed state was confirmed at 0.716 seconds. Its first fresh recovery guard
+F01's changed state was confirmed at 0.716 seconds. Its first fresh recovery guard
 read timed out after 0.8 seconds, and the worker ended at 1.518 seconds without
 using the remaining recovery reserve. The sequence stopped; a separate guarded
 recovery required current state to match the known test change, restored the
@@ -109,22 +113,56 @@ original channels and Automatic, and confirmed both. That recovery transaction
 took 1.887 seconds. Total excursion is estimated at 53.16 seconds using HA-side
 report modification times plus the initial excursion timing; it is approximate,
 not a monotonic cross-process measurement. Two subsequent read-only checks
-confirmed Automatic. This is a second failed bounded test, not six-channel
-acceptance. No released write profile is enabled.
+confirmed Automatic. This remains a second failed bounded test; F02 does not
+change its outcome or the original incident below.
 
 The immediate defect is abandoning cleanup after a single transient recovery
 read failure. Whether the timeout occurred at connection setup or queried reply
 is not established by that report. Repair requires bounded read-only retries
 while reserving command/recovery time; no write retry, stale replay, or larger
-ten-second allowance is authorized. Further experiments remain paused until
-that repair passes offline tests and independent review. Safe implementation,
-publication and read-only native lifecycle work continue.
+ten-second allowance is authorized. Experiments remained paused until the repair
+passed the offline tests and independent review recorded next.
+
+## Repaired recovery gate and Channel F02
+
+The [superseding independent review](../docs/aquarius-validation-review.md)
+passed **62 offline tests in 53.171 seconds**: 43 base-worker tests and 19
+HA-service-adapter tests, with Ruff PASS. These use synthetic state, loopback TCP
+and loopback HTTP; they do not establish actual HA service control. The reviewed
+source hashes are:
+
+| File | SHA-256 |
+| --- | --- |
+| `tooling/aquarius_validation.py` | `1fbbb2db16a19b7b7478b699903d95bd725710d308a9c37c5114666f0ce38300` |
+| `tests/test_aquarius_validation.py` | `a6849fd273cbdbca548ffde331e4af356ee7083ca06b6e916d416d5bf73d4b61` |
+| `tooling/aquarius_ha_validation.py` | `4550805ee0c45a3777eb59019c4bf539e01bf75f41974e461359f7d3f3271c37` |
+| `tests/test_aquarius_ha_validation.py` | `63472b0e3c0ad6ac747b94d10bdcd958ac8af26d9692a5d3a626fb3318cacf57` |
+
+Recovery status reads now permit at most three fresh connections within a shared
+2.5-second stage budget. The existing 9.5-second cleanup deadline retains four
+seconds after the initial guard and two seconds before any remaining original-mode
+command. A lost cleanup system-query reply may be confirmed through fresh full
+state reads; no write is resent. Partial, malformed, contradictory, changed-profile
+or competing state remains terminal. Events record absolute monotonic timestamps
+and failed connect/query phases. Persistent transport loss still reports
+unconfirmed recovery; the timer cannot guarantee physical restoration.
+
+The coordinator then ran the repaired worker for actual direct-TCP **F02 PASS**,
+with a one-point increase. Original channels were confirmed at **2.056392 seconds**
+and original Automatic mode at **2.653862 seconds**; total reported excursion was
+**2.653872 seconds**. The launching SSH session returned after **0.140 seconds**,
+while the detached HA-side worker owned cleanup. Two subsequent read-only checks
+confirmed Automatic. Together with the earlier A–E passes, all six channels now
+have successful bounded direct-TCP change/readback/restoration evidence.
+This establishes no optical colour mapping and does not replace native HA
+Number/Select service validation, which remains pending.
 
 The interim 0.1.1 module source adds response-backed write-connection lifetime,
 strict echo quarantine, fresh-socket confirmation, current Automatic vector
 preservation and a three-second admitted-action deadline covering debounce and
-lock queues. All profiles remain read-only. Local synthetic checks: **304 unit
-tests PASS**, **47 native HA tests PASS**, Ruff/catalog/bundle checks PASS.
+lock queues. This interim version keeps all profiles read-only. At its initial
+source checkpoint, local synthetic checks passed **304 unit tests**, **47 native
+HA framework tests**, and Ruff/catalog/bundle validation.
 
 ## Native setup serialization repair
 
@@ -133,16 +171,13 @@ showing the controller form. Private Core diagnostics identified HA's inability
 to serialize the `_normalize_host` callable inside the form schema. Direct
 FlowManager tests had not exercised the HTTP response serializer.
 
-The unpublished 0.1.1 source now exposes a declarative string field and performs
+The 0.1.1 source exposes a declarative string field and performs
 normalization/validation after submission, retaining normalized duplicate checks
 and a clear `invalid_host` field error. Six regression cases use HA's actual
 `FlowManagerIndexView._prepare_result_json` for initial/reconfigure forms and
 invalid-host responses. **14 config-flow tests PASS; 53 total native HA tests
-PASS; Ruff PASS.** These are synthetic framework checks; the repaired artifact
-must still pass the real native UI after delivery. The original 0.1.0 release
-remains unchanged. Read-only lifecycle order will update its installed code to
-0.1.1 before native configuration, then verify rollback using that existing
-read-only configuration before removal.
+PASS; Ruff PASS.** These are synthetic framework checks. The original 0.1.0
+release remains unchanged. Actual delivery and native UI evidence follow.
 
 ## Read-only lifecycle artifact 0.1.1
 
@@ -155,6 +190,19 @@ All three assets were downloaded without credentials and matched their published
 bytes; actual Manager archive validation and private-value scans passed. Its
 shipped write allowlist is empty. This is an intermediate read-only lifecycle
 version, not Task 003 completion or the final owner-ready control release.
+
+Actual Manager 0.1.2 Ingress Refresh discovered this new 0.1.1 module version
+without an App rebuild. Updating the installed module from 0.1.0 to 0.1.1 through
+Manager passed, followed by the gated Core restart and health checks. Actual
+native HA UI configuration reached `create_entry`; the installed entry exposes
+six numeric A–F Number entities with range 0–100 and a Select reporting Automatic.
+Diagnostic acceptance, rollback/removal and final reinstallation remain pending.
+The empty write allowlist makes these read-only installation results.
+
+Source 0.2.0 is being prepared for validated controls. Actual native HA control
+tests, Manager/development-connection independence and the final owner-ready
+installation remain pending. Publishing or loading a write-enabled profile alone
+will not satisfy those acceptance checks.
 
 ## Historical revision-2 baseline and authorization
 
@@ -217,7 +265,7 @@ catalog while leaving Manager logic unchanged. A durable alternative is an
 explicitly authorized built-in remote-catalog refresh feature. Neither has been
 implemented or deployed under the current no-rebuild constraint.
 
-## Failed bounded control and recovery
+## Historical first bounded control and recovery
 
 The reviewed client passed two stable, read-only refreshes. The first test sent
 only a one-percentage-point Channel A reduction and the app-derived Manual
@@ -264,7 +312,7 @@ and an authorized path to deliver catalog metadata to the installed Manager.
 Actual setup, update/rollback/removal, Manager-off operation and Mac-off operation
 remain NOT_TESTED. No optical or calibrated output claim follows from byte reads.
 
-## Candidate publication
+## Historical 0.1.0 candidate publication
 
 Source checkpoint `56a0b81c31beddcecf56a96e6027d80d0293de57` contains the native
 read-only candidate, tests, builder and usage/recovery documentation. Its remote
@@ -295,3 +343,44 @@ Shelly control, calibrated optical output and RGB colour-wheel control are exclu
 
 Completion requires separately reported synthetic tests, device readback,
 physical observations and actual HAHAPent/native HA lifecycle evidence.
+
+## Continuation read-only lifecycle acceptance
+
+**PASS (actual test-dev):** native setup of 0.1.1 created one loaded entry,
+one device, six numeric percentage entities and Automatic-program mode. The
+write-support diagnostic reported `read_only`; its missing translated name
+was a presentation defect repaired for the final 0.2.0 source.
+
+Manager's actual Ingress UI rolled 0.1.1 back to 0.1.0. After the gated Core
+restart, the existing entry loaded with the same device and entity identities,
+six readable percentages and Automatic mode. The broken historical 0.1.0
+new-entry form was not used or counted as passing. Manager refused removal
+while the native HA entry existed. Native HA's entry menu then deleted only
+the Aquarius entry, and Manager completed package removal. Final working
+installation is recorded separately when complete. These lifecycle operations used only the
+read-only releases and issued no lamp control commands.
+
+## Working control source and immutable publication
+
+Source `8fd50282111fe6eb3c02f0a00ac3716eb31e84d0` prepares module **0.2.0**
+with exactly the validated controller/version/six-channel write profile.
+Shutdown and unknown operating modes remain readable but cannot initiate or
+receive explicit controls. The missing translated write-support name is fixed.
+Independent source review **PASS**; local **343 unit tests PASS** and **56 native
+HA tests PASS**. [Source CI](https://github.com/djeZo888/HAHAPent/actions/runs/34291685273)
+completed successfully, including both Python versions, native HA and the actual
+amd64 App image/runtime checks. No private credentials were used by CI.
+
+The deterministic 0.2.0 ZIP SHA-256 is
+`9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382`.
+Publication and deployment results follow after verification. A second fresh
+pre-deployment encrypted backup was downloaded privately (46,254,080 bytes),
+and isolated decryption and selected-content readability passed using the
+existing retained recovery key. No live restore was performed.
+
+[Module 0.2.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0)
+was published as an immutable control candidate with ZIP, catalog snapshot and
+checksums. All three unauthenticated public downloads matched their local bytes;
+Manager's real archive validator accepted the ZIP and provenance. Artifact
+content and release notes passed secret/private-target scanning. Final native
+HA acceptance remains a separate gate before promoting its status.

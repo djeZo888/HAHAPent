@@ -43,6 +43,13 @@ async def test_native_device_six_sliders_diagnostics_and_readonly_lifecycle(
     )
     raw = hass.states.get(entity_id(hass, loaded_entry, "sensor", "raw_version_bytes"))
     assert raw.state == "01 02"
+    support_id = entity_id(hass, loaded_entry, "sensor", "write_support")
+    assert support_id == "sensor.aquarius_plant_led_write_support"
+    assert (
+        hass.states.get(support_id).attributes["friendly_name"]
+        == "Aquarius Plant LED Write support"
+    )
+    assert er.async_get(hass).async_get(support_id).original_name == "Write support"
     assert await hass.config_entries.async_reload(loaded_entry.entry_id)
     await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(loaded_entry.entry_id)
@@ -495,5 +502,31 @@ async def test_unvalidated_profile_reports_levels_and_clearly_blocks_all_native_
     assert coordinator.last_update_success
     assert coordinator.data == observed_state
     assert mock_client.refresh.await_count == reads
+    mock_client.set_channel.assert_not_awaited()
+    mock_client.set_mode.assert_not_awaited()
+
+
+@pytest.mark.parametrize("mode", (8, 255))
+async def test_unsupported_origin_mode_preserves_diagnostics_and_blocks_controls(
+    hass, loaded_entry, mock_client, observed_state, mode
+):
+    coordinator = loaded_entry.runtime_data
+    state = replace(observed_state, system=replace(observed_state.system, mode_raw=mode))
+    coordinator.async_set_updated_data(state)
+    await hass.async_block_till_done()
+    channel = entity_id(hass, loaded_entry, "number", "channel_a")
+    assert hass.states.get(channel).state == "10"
+    assert hass.states.get(channel).attributes["adjustment_action"].startswith("Read-only")
+    assert hass.states.get(entity_id(hass, loaded_entry, "sensor", "raw_mode")).state == str(mode)
+    with pytest.raises(ServiceValidationError, match="unsupported operating mode"):
+        await hass.services.async_call(
+            "number", "set_value", {"entity_id": channel, "value": 9}, blocking=True
+        )
+    for option in ("manual", "automatic_program"):
+        with pytest.raises(ServiceValidationError, match="unsupported operating mode"):
+            await coordinator.async_set_mode(option)
+    with pytest.raises(ServiceValidationError, match="Unsupported operating mode"):
+        await coordinator.async_set_mode("shutdown")
+    assert coordinator.last_update_success
     mock_client.set_channel.assert_not_awaited()
     mock_client.set_mode.assert_not_awaited()

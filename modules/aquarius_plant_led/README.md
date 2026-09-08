@@ -1,29 +1,27 @@
 # Aquarius Plant LED
 
-**0.1.1 is an interim read-only recovery-fix prerelease.** It adds a queried
-mode/profile response before closing a write connection and handles changing
-Automatic-program channel levels during explicit actions. These control-path
-changes have synthetic coverage; the shipped controller write allowlist remains
-empty. This candidate supports read-only installation, update, rollback and
-removal checks while bounded hardware validation is repaired. Working controls
-require a later independently validated release.
+**Version 0.2.0** provides six independent **Channel A–F** percentage controls
+and explicit **Manual / Automatic program** selection for the validated Aqua
+Medic Aquarius Plant Plus 60 controller profile. Other profiles remain read-only.
+Each channel uses integer steps from `0–100%`; letters describe protocol order,
+not verified colours or wavelengths.
 
-The immutable **0.1.0** candidate and its incident evidence remain historical.
-Its first bounded control test failed during immediate reconnect verification,
-and restoration exceeded the ten-second limit. The original channels and
-Automatic mode were subsequently restored and confirmed. The earlier SSH
-transport's connection lifetime is not evidence that native TCP or the lamp is
-incompatible; the continuation separates transport diagnosis from hardware
-claims. Neither read-only candidate completes the working-control assignment.
+The local Home Assistant integration uses raw TCP and needs no cloud account,
+MQTT, Manager process or developer computer at runtime. All six channels and
+Manual/Automatic operation passed bounded direct-TCP device validation. Actual
+HA service and installed lifecycle results are recorded separately in
+[Task 003](../../tasks/003-led-integration.md).
 
-Local Home Assistant integration targeting the Aqua Medic Aquarius Plant Plus 60.
-The independently versioned module uses raw TCP and needs no cloud account,
-MQTT, Manager process or developer computer at runtime. Release acceptance is
-recorded in [Task 003](../../tasks/003-led-integration.md).
+The immutable [0.1.0 read-only candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
+and interim 0.1.1 release remain historical. Two earlier tests exceeded the
+ten-second recovery bound; later successful checks do not erase those failures.
+The [incident record](../../tasks/003-led-integration.md#continuation-live-delivery-and-recovery-evidence)
+and [independent recovery reviews](../../docs/aquarius-validation-review.md)
+preserve the failed outcomes, deliberate recoveries and subsequent repairs.
 
 ## Installation and setup
 
-Install the published **Aquarius Plant LED** candidate from HAHAPent's catalog,
+Install **Aquarius Plant LED** from HAHAPent's catalog,
 then follow **Configure in HA** to add the native integration. Enter the lamp's
 already provisioned IP address or hostname and TCP port (default `8080`). The
 connection originates from Home Assistant. Setup sends only system/channel reads.
@@ -38,15 +36,13 @@ first. Do not copy integration files over Manager ownership or add the same
 repository as an extra source. The task report records actual installed versions
 and lifecycle results separately from these instructions.
 
-One device contains six **Channel A–F** percentage sliders, an **Operating mode**
-selector, a **Write support** diagnostic and raw protocol diagnostics. Each slider
-displays integer `0–100%` values. Commands return an explicit read-only validation
-error in this candidate; another poll cannot enable an unvalidated profile.
-For a future validated profile, the implemented and synthetically tested behavior
+One device contains six **Channel A–F** sliders, an **Operating mode** selector,
+a **Write support** diagnostic and raw protocol diagnostics. Adjusting a slider
 enters and saves **Manual**, pausing the stored automatic program. Other channels
-are preserved from fresh readback. **Automatic program** explicitly resumes the
+are preserved from fresh readback. Choose **Automatic program** to resume the
 existing schedule. This action does not edit that schedule or restore a previous
-manual mix.
+manual mix. A controller outside the validated profile remains readable, and
+its controls explain why writes are unavailable.
 
 Channel letters describe protocol order, not verified colours or wavelengths.
 Rename entities in Home Assistant after identifying them; names do not determine
@@ -60,8 +56,8 @@ cannot be reliably detected from these protocol fields alone.
 - Startup, setup, polling, reload and reconnection only read state. No brightness,
   mode, schedule, clock or saved state is replayed automatically.
 - Polling starts at 30 seconds and backs off to 5 minutes during failures.
-  Explicit slider changes are debounced. A future enabled profile must match the
-  freshly read mode and profile. Changes to Manual output are a conflict;
+  Explicit slider changes are debounced. Each action checks the freshly read
+  mode and profile. Changes to Manual output are a conflict;
   schedule-driven level changes while the same Automatic mode remains active are
   allowed only for an explicit action, preserving the other five fresh values.
   The write connection remains open for a queried mode/profile confirmation,
@@ -79,7 +75,9 @@ cannot be reliably detected from these protocol fields alone.
   change. Close competing controller apps when commissioning.
 - Only explicitly validated controller/version/count profiles permit writes.
   Unknown profiles and unknown modes remain diagnostic rather than being treated
-  as off. Raw version bytes are not a manufacturer firmware version string.
+  as off. Controls are available only when the current mode is Manual or
+  Automatic; Shutdown and other starting modes remain read-only even on a
+  validated profile. Raw version bytes are not a manufacturer firmware string.
 - Shutdown/on-off, master brightness, RGB colour wheels, effects, schedule/clock
   writes, temperature, provisioning, factory reset and firmware updates are not
   exposed. Six percentage values are not calibrated light-output measurements.
@@ -111,6 +109,13 @@ must be investigated privately; do not post configuration, addresses or captures
 For a conflict or unconfirmed change, inspect the current state and other active
 controllers. No automatic restoration is attempted because it could overwrite a
 newer intentional change. Never infer software shutdown from an outage.
+
+After installation, confirm that all six channel values are available and the
+Write support diagnostic identifies the validated profile. For an owner check,
+make one small deliberate channel adjustment, verify Manual mode and the other
+five values, restore that channel's previous value, then select Automatic program
+if that was the desired original mode. Use the HA connection and entity names
+already configured; no provisioning or developer-computer connection is required.
 
 Use HAHAPent's owned-code rollback to restore a prior module release. Rollback
 changes integration files, not lamp settings or schedules. Native config entries
