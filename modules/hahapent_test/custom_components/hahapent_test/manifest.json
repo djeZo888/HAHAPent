@@ -1,0 +1,12 @@
+{
+  "domain": "hahapent_test",
+  "name": "HAHAPent device-free test",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/djeZo888/HAHAPent/blob/main/modules/hahapent_test/README.md",
+  "integration_type": "helper",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "0.1.0"
+}

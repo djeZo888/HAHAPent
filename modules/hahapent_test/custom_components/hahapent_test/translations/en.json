@@ -1,0 +1,14 @@
+{
+  "title": "HAHAPent device-free test",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up the HAHAPent test sensor",
+        "description": "Creates one local sensor reporting the installed test code version. No network or device actions are performed."
+      }
+    },
+    "abort": {
+      "already_configured": "The HAHAPent test sensor is already configured."
+    }
+  }
+}
