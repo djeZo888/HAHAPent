@@ -242,6 +242,12 @@ class HAValidationWorker(base.ValidationWorker):
 
     def _ha_call(self, action, value, deadline, stage):
         self._check_stop()
+        # HA's integration needs its own lamp connection. Release the observer
+        # after the fresh guard, including before HA-based Automatic cleanup.
+        # Keeping it open can starve controllers that process one client at a time.
+        self._close()
+        self.io_phase = "ha_service"
+        self._event(stage + "_observer_connection_released")
         minimum = HA_CLEANUP_MARGIN if self.cleaning else base.WRITE_RECOVERY_MARGIN
         if deadline - self.clock() < minimum:
             raise base.DeadlineError("insufficient time for an HA action and independent readback")

@@ -271,7 +271,48 @@ Actual Manager 0.1.2 App update, Ingress refresh and cache persistence passed.
 Its later Refresh discovered module 0.1.1 without rebuilding the App; the real
 Manager update from module 0.1.0 to 0.1.1 and gated Core health checks passed.
 The repaired native HA UI reached `create_entry`, with six numeric 0–100 Numbers
-and an Automatic Select. Diagnostic acceptance, rollback/removal and final
-reinstallation remain pending. Module 0.1.1 is still read-only; source 0.2.0 and
-actual native controls are being prepared. These delivery results do not yet
-establish final owner-ready operation or Manager/development-connection independence.
+and an Automatic Select. Subsequent read-only rollback preserved native identity;
+native entry deletion and Manager code removal passed. Module 0.1.1 remains an
+immutable read-only artifact.
+
+The final-version
+[0.2.0 artifact](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0)
+was published with three verified assets. ZIP SHA-256:
+`9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382`.
+PR #9 merged as `0f94c1c329c48b6641ac7d49204fa41a7e4bf796`, with
+[CI 34291947584](https://github.com/djeZo888/HAHAPent/actions/runs/34291947584)
+and [CI 34291923648](https://github.com/djeZo888/HAHAPent/actions/runs/34291923648)
+both successful. Actual Manager 0.1.2 Refresh discovered 0.2.0 without an App
+rebuild, and actual UI installation reached Complete. The gated Core restart
+returned healthy HA 2026.9.1 with unchanged KNX. Native setup reached
+`create_entry`: one device, six Numbers and one Select. The protected target
+mapping and every installed Python file/manifest were checked against the
+intended target and source. These are installed-code and setup checks, not
+working-control acceptance.
+
+Manager was stopped before the native independence test phase. The first actual
+HA control test, **A01 FAIL**, reached unknown HTTP completion at 3.001782 seconds.
+An independent guard confirmed the exact original channel vector and Automatic
+at 3.598169 seconds; the worker reported FAIL at 3.598303 seconds because HA
+completion remained unknown. Two later read-only checks confirmed Automatic,
+and HA logs recorded admitted-action deadline errors. No successful HA control
+or cancellation is inferred from the unchanged output.
+
+A read-only connection-contention probe then passed on its first connection,
+timed out after 0.803462 seconds on a second connection while the first remained
+open, and passed a fresh full read in 0.425227 seconds after releasing the first.
+The final read matched the unchanged Automatic baseline. The adapter was holding
+its baseline TCP socket during the HA request, blocking the HA client's independent
+connection under the observed conditions. Repair will release that socket before
+the actuator call and add an exclusive-connection simulator regression, followed
+by independent review. Further writes remain paused; native control and
+control operation independent of Manager/the development connection are pending.
+
+Configured startup availability with Manager stopped separately **PASS**: final
+0.2.0 remained loaded after another gated Core restart, with the exact protected
+target, six Numbers and a Select, and all installed Python/manifest bytes checked.
+Core was running HA 2026.9.1; KNX was loaded/connected and the immutable project
+and startup baselines were unchanged. Two fresh post-startup TCP read-only checks
+confirmed Automatic. This demonstrates configured startup and availability with
+Manager off, while actual HA control acceptance still awaits the adapter repair.
+Task 003 is installed and configured but remains **IN PROGRESS**.

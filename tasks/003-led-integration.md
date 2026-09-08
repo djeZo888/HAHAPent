@@ -1,6 +1,6 @@
 # Task 003 — Aquarius Plant LED
 
-Status: **IN PROGRESS — authorized continuation to working installed controls**.
+Status: **IN PROGRESS — 0.2.0 installed and configured; native control validation repair pending**.
 This task follows the owner's revision-2 assignment;
 the original package, device configuration and packet evidence are private.
 
@@ -196,13 +196,69 @@ without an App rebuild. Updating the installed module from 0.1.0 to 0.1.1 throug
 Manager passed, followed by the gated Core restart and health checks. Actual
 native HA UI configuration reached `create_entry`; the installed entry exposes
 six numeric A–F Number entities with range 0–100 and a Select reporting Automatic.
-Diagnostic acceptance, rollback/removal and final reinstallation remain pending.
-The empty write allowlist makes these read-only installation results.
+The subsequent read-only rollback preserved native device/entity identity.
+Native entry deletion and Manager code removal also passed. The empty write
+allowlist makes these read-only lifecycle results. Final 0.2.0 installation and
+the first native control attempt are recorded below.
 
-Source 0.2.0 is being prepared for validated controls. Actual native HA control
-tests, Manager/development-connection independence and the final owner-ready
-installation remain pending. Publishing or loading a write-enabled profile alone
-will not satisfy those acceptance checks.
+## Module 0.2.0 publication and installed checkpoint
+
+The immutable
+[0.2.0 release](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0)
+was published with three verified assets: native ZIP, catalog snapshot and
+SHA256SUMS. ZIP SHA-256 is
+`9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382`.
+PR #9 merged as `0f94c1c329c48b6641ac7d49204fa41a7e4bf796`;
+[CI run 34291947584](https://github.com/djeZo888/HAHAPent/actions/runs/34291947584)
+and [CI run 34291923648](https://github.com/djeZo888/HAHAPent/actions/runs/34291923648)
+completed successfully. These publication and CI checks do not establish actual
+native HA control acceptance.
+
+Actual Manager 0.1.2 Ingress Refresh discovered 0.2.0 without another App rebuild,
+and the real UI installation reached **Complete**. The gated Core restart
+returned healthy HA 2026.9.1 with KNX unchanged. Native HA configuration reached
+`create_entry`, producing one device, six Number entities and one Select. The
+coordinator verified the entry/entity mapping to the exact protected target;
+all installed Python files and the manifest matched the published source bytes.
+The profile is write-enabled in this version, but that fact alone is not a
+successful control test.
+
+Manager was stopped for the independence test phase. Native diagnostics,
+successful HA Number/Select controls and final control-independence/owner-ready
+acceptance remain incomplete. Configured startup availability with Manager off
+has separately **PASS** evidence: a subsequent gated Core restart left HA
+2026.9.1 running, the 0.2.0 entry loaded, six Numbers and the Select available,
+and KNX loaded/connected with unchanged project and startup baselines. The exact
+protected target and all installed Python/manifest bytes were checked again.
+Two fresh post-startup TCP reads confirmed Automatic. This proves configured
+startup and availability without Manager; it does not prove successful HA
+control. The first actual control test failed as described next.
+
+## Native HA A01 failure and read-only diagnosis
+
+The first native HA channel test, **A01, is FAIL**. Its HTTP operation reached
+unknown completion at **3.001782 seconds**. A fresh independent guard confirmed
+the exact original channel vector and Automatic mode at **3.598169 seconds**.
+The worker ended with an honest FAIL at **3.598303 seconds** because the HA
+action's completion was unknown. Observing original output does not prove that
+the HA action succeeded, was ignored or was cancelled. No native control PASS
+is claimed. Two subsequent fresh read-only checks confirmed Automatic; private
+HA logs recorded admitted-action deadline errors.
+
+Read-only diagnosis then tested connection contention. The first connection
+successfully read Automatic state. With that connection still open, a second
+connection timed out after **0.803462 seconds**. After releasing the first
+connection, a fresh full read passed in **0.425227 seconds**, matching the exact
+unchanged baseline and Automatic mode. The HA-service adapter had retained its
+baseline TCP connection while invoking HA, preventing the HA client's independent
+connection from completing under these observed conditions.
+
+Further control experiments are paused. The adapter is being repaired to release
+its baseline connection before invoking the HA actuator, with exclusive-connection
+simulation coverage and renewed independent review required before another live
+test. This is an adapter connection-lifetime defect, not evidence that the
+direct-TCP channel protocol is incompatible. No larger test allowance, automatic
+write retry or relaxation of unknown-completion handling is authorized.
 
 ## Historical revision-2 baseline and authorization
 
@@ -384,3 +440,13 @@ checksums. All three unauthenticated public downloads matched their local bytes;
 Manager's real archive validator accepted the ZIP and provenance. Artifact
 content and release notes passed secret/private-target scanning. Final native
 HA acceptance remains a separate gate before promoting its status.
+
+The HA-adapter handoff repair subsequently passed independent source review and
+**22 adapter tests** (18.913 seconds independently), plus **65 combined worker
+and adapter tests** (60.676 seconds by the coordinator). The new adapter closes
+its observer connection before each native HA delegation, including Automatic
+cleanup; the original deadline, fresh readback and uncertain-completion failure
+rules remain intact. The exclusive-connection regression failed on the previous
+implementation and passes after the repair. See the superseding frozen hashes
+in [the review](../docs/aquarius-validation-review.md). The installed module and
+its immutable ZIP are unchanged by this operator-tool repair.
