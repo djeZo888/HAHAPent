@@ -1,10 +1,20 @@
 # Aquarius Plant LED
 
-**0.1.0 is a read-only prerelease candidate.** Actual lamp reads pass, but the
-first bounded control test failed during immediate reconnect verification and
-restoration exceeded its ten-second limit. The original channels and automatic
-mode were subsequently restored and confirmed. No controller profile currently
-permits writes. This is not a completed or production-ready control integration.
+**0.1.1 is an interim read-only recovery-fix prerelease.** It adds a queried
+mode/profile response before closing a write connection and handles changing
+Automatic-program channel levels during explicit actions. These control-path
+changes have synthetic coverage; the shipped controller write allowlist remains
+empty. This candidate supports read-only installation, update, rollback and
+removal checks while bounded hardware validation is repaired. Working controls
+require a later independently validated release.
+
+The immutable **0.1.0** candidate and its incident evidence remain historical.
+Its first bounded control test failed during immediate reconnect verification,
+and restoration exceeded the ten-second limit. The original channels and
+Automatic mode were subsequently restored and confirmed. The earlier SSH
+transport's connection lifetime is not evidence that native TCP or the lamp is
+incompatible; the continuation separates transport diagnosis from hardware
+claims. Neither read-only candidate completes the working-control assignment.
 
 Local Home Assistant integration targeting the Aqua Medic Aquarius Plant Plus 60.
 The independently versioned module uses raw TCP and needs no cloud account,
@@ -13,26 +23,30 @@ recorded in [Task 003](../../tasks/003-led-integration.md).
 
 ## Installation and setup
 
-Once the catalog deployment prerequisite below is resolved, install the published
-**Aquarius Plant LED** candidate from HAHAPent's catalog,
+Install the published **Aquarius Plant LED** candidate from HAHAPent's catalog,
 then follow **Configure in HA** to add the native integration. Enter the lamp's
 already provisioned IP address or hostname and TCP port (default `8080`). The
 connection originates from Home Assistant. Setup sends only system/channel reads.
 Follow the Manager's Core restart indication after changing integration code.
 Back up HA and review startup effects before restarting an existing installation.
 
-Manager 0.1.1 bundles its built-in catalog inside its installed App image. A newly
-published module does not appear solely by refreshing that version's catalog.
-The task report tracks this deployment prerequisite; do not copy integration
-files over Manager ownership or add the same repository as an extra source.
+Manager 0.1.2 adds canonical built-in catalog refresh, retaining validated cached
+metadata across App restarts. Use **Refresh** to discover newly published module
+versions after that Manager update is installed. The older Manager 0.1.1 only
+bundles its built-in catalog, so update it through the supported App-store path
+first. Do not copy integration files over Manager ownership or add the same
+repository as an extra source. The task report records actual installed versions
+and lifecycle results separately from these instructions.
 
 One device contains six **Channel A–F** percentage sliders, an **Operating mode**
-selector and raw diagnostic sensors. Each slider displays integer `0–100%` values.
-Commands are blocked in this read-only candidate. The implemented, synthetically
-tested behavior for a future validated profile enters and saves **Manual**, pausing the
-stored automatic program. Other channels are preserved from fresh readback.
-For such a validated profile, **Automatic program** explicitly resumes the existing schedule.
-This action does not edit that schedule or restore a previous manual mix.
+selector, a **Write support** diagnostic and raw protocol diagnostics. Each slider
+displays integer `0–100%` values. Commands return an explicit read-only validation
+error in this candidate; another poll cannot enable an unvalidated profile.
+For a future validated profile, the implemented and synthetically tested behavior
+enters and saves **Manual**, pausing the stored automatic program. Other channels
+are preserved from fresh readback. **Automatic program** explicitly resumes the
+existing schedule. This action does not edit that schedule or restore a previous
+manual mix.
 
 Channel letters describe protocol order, not verified colours or wavelengths.
 Rename entities in Home Assistant after identifying them; names do not determine
@@ -46,8 +60,18 @@ cannot be reliably detected from these protocol fields alone.
 - Startup, setup, polling, reload and reconnection only read state. No brightness,
   mode, schedule, clock or saved state is replayed automatically.
 - Polling starts at 30 seconds and backs off to 5 minutes during failures.
-  Explicit slider changes are debounced. Changes require fresh matching state and
-  post-command readback; an acknowledgement or echoed command cannot confirm them.
+  Explicit slider changes are debounced. A future enabled profile must match the
+  freshly read mode and profile. Changes to Manual output are a conflict;
+  schedule-driven level changes while the same Automatic mode remains active are
+  allowed only for an explicit action, preserving the other five fresh values.
+  The write connection remains open for a queried mode/profile confirmation,
+  followed by a fresh connection for channel readback. An acknowledgement or
+  echoed command cannot confirm the change.
+- Each admitted explicit action has a three-second deadline including debounce
+  and waiting for communication locks. Expiry cancels and settles the client
+  transaction, marks output unavailable and prevents queued work from replaying.
+  This does not bound HTTP service admission or recall bytes already sent to the
+  controller. A fresh read is required before another deliberate action.
 - An unavailable lamp stays unavailable, including when another device cuts mains
   power. This integration never controls a Shelly or restores mains power.
 - A changed or unconfirmed state stops that action; no write retry loop runs.

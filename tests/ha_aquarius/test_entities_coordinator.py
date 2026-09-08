@@ -156,6 +156,124 @@ async def test_slider_burst_debounces_to_latest_value(loaded_entry, mock_client)
     assert coordinator.data.channels[0] == 13
 
 
+async def test_native_action_deadline_includes_debounce_and_never_replays(
+    hass, loaded_entry, mock_client
+):
+    coordinator = loaded_entry.runtime_data
+    epoch = coordinator._command_epoch
+    with (
+        patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0.06),
+        patch("custom_components.aquarius_plant_led.coordinator.EXPLICIT_COMMAND_TIMEOUT", 0.02),
+    ):
+        with pytest.raises(HomeAssistantError, match="expired before completion"):
+            await hass.services.async_call(
+                "number",
+                "set_value",
+                {"entity_id": entity_id(hass, loaded_entry, "number", "channel_a"), "value": 11},
+                blocking=True,
+            )
+        await asyncio.sleep(0.08)
+    assert coordinator._command_epoch == epoch + 1
+    assert not coordinator.last_update_success
+    mock_client.set_channel.assert_not_awaited()
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+    mock_client.set_channel.assert_not_awaited()
+
+
+@pytest.mark.parametrize("action", ("channel", "mode"))
+async def test_action_waiting_behind_poll_expires_and_cannot_write_after_poll_recovers(
+    loaded_entry, mock_client, observed_state, action
+):
+    coordinator = loaded_entry.runtime_data
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def slow_poll():
+        entered.set()
+        await release.wait()
+        return observed_state
+
+    mock_client.refresh.side_effect = slow_poll
+    poll = asyncio.create_task(coordinator.async_refresh())
+    await entered.wait()
+    with (
+        patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0),
+        patch("custom_components.aquarius_plant_led.coordinator.EXPLICIT_COMMAND_TIMEOUT", 0.02),
+    ):
+        with pytest.raises(HomeAssistantError, match="expired before completion"):
+            await (
+                coordinator.async_set_channel(0, 11)
+                if action == "channel"
+                else coordinator.async_set_mode("automatic_program")
+            )
+    release.set()
+    await poll
+    await asyncio.sleep(0)
+    assert coordinator.last_update_success
+    assert coordinator._active_command is None
+    mock_client.set_channel.assert_not_awaited()
+    mock_client.set_mode.assert_not_awaited()
+
+
+@pytest.mark.parametrize("action", ("channel", "mode"))
+async def test_action_deadline_awaits_client_cancellation_cleanup_before_returning(
+    loaded_entry, mock_client, action
+):
+    coordinator = loaded_entry.runtime_data
+    settled = asyncio.Event()
+
+    async def slow_command(*args, **kwargs):
+        try:
+            await asyncio.Event().wait()
+        finally:
+            await asyncio.sleep(0.01)
+            settled.set()
+
+    command = mock_client.set_channel if action == "channel" else mock_client.set_mode
+    command.side_effect = slow_command
+    with (
+        patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0),
+        patch("custom_components.aquarius_plant_led.coordinator.EXPLICIT_COMMAND_TIMEOUT", 0.02),
+    ):
+        with pytest.raises(HomeAssistantError, match="expired before completion"):
+            await (
+                coordinator.async_set_channel(0, 11)
+                if action == "channel"
+                else coordinator.async_set_mode("automatic_program")
+            )
+    assert settled.is_set()
+    assert coordinator._active_command is None
+    assert not coordinator.last_update_success
+    command.assert_awaited_once()
+
+
+async def test_expired_queued_action_does_not_clear_another_actions_active_task(
+    loaded_entry, mock_client
+):
+    coordinator = loaded_entry.runtime_data
+    entered = asyncio.Event()
+
+    async def active_command(*args, **kwargs):
+        entered.set()
+        await asyncio.Event().wait()
+
+    mock_client.set_channel.side_effect = active_command
+    with patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0):
+        active = asyncio.create_task(coordinator.async_set_channel(0, 11))
+        await entered.wait()
+        with patch(
+            "custom_components.aquarius_plant_led.coordinator.EXPLICIT_COMMAND_TIMEOUT", 0.02
+        ):
+            with pytest.raises(HomeAssistantError, match="expired before completion"):
+                await coordinator.async_set_mode("automatic_program")
+        assert coordinator._active_command is active
+        active.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await active
+    assert coordinator._active_command is None
+    mock_client.set_mode.assert_not_awaited()
+
+
 async def test_mode_choice_supersedes_pending_slider(loaded_entry, mock_client):
     coordinator = loaded_entry.runtime_data
     with patch("custom_components.aquarius_plant_led.coordinator.CHANNEL_DEBOUNCE_SECONDS", 0.01):

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -20,6 +21,7 @@ from .const import (
 from .protocol import ProtocolError
 
 _LOGGER = logging.getLogger(__name__)
+EXPLICIT_COMMAND_TIMEOUT = 3.0
 
 
 class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
@@ -91,8 +93,43 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                 "Review the current state and submit a new change."
             )
 
+    @asynccontextmanager
+    async def _command_window(self, deadline: float):
+        """Expire the entire admitted action, including debounce and lock waits.
+
+        Cancellation propagates through the awaited client transaction and its
+        socket cleanup before this scope returns. This is not an HTTP admission
+        deadline or a guarantee that already transmitted bytes cannot arrive late.
+        """
+        task = asyncio.current_task()
+        try:
+            async with asyncio.timeout_at(deadline):
+                yield
+        except TimeoutError:
+            self._read_failed()
+            self.async_set_update_error(UpdateFailed("Controller action deadline expired"))
+            raise HomeAssistantError(
+                "The change expired before completion. No command was retried. "
+                "Read and review the controller state before another change."
+            ) from None
+        except asyncio.CancelledError:
+            self._read_failed()
+            self.async_set_update_error(UpdateFailed("Controller command was cancelled"))
+            raise
+        finally:
+            if self._active_command is task:
+                self._active_command = None
+
+    @staticmethod
+    def _check_command_deadline(deadline: float) -> None:
+        # A lock can become ready after a delayed event-loop turn. Do not enter
+        # the client merely because its timeout callback has not run yet.
+        if asyncio.get_running_loop().time() >= deadline:
+            raise TimeoutError
+
     async def async_set_channel(self, index: int, value: int) -> None:
         """Debounce slider changes, then explicitly save manual output once."""
+        deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
         if type(index) is not int or index not in range(6):
             raise ServiceValidationError("Channel must be A through F")
         if type(value) is not int or value not in range(101):
@@ -101,59 +138,56 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         epoch = self._command_epoch
         self._channel_generations[index] += 1
         generation = self._channel_generations[index]
-        await asyncio.sleep(CHANNEL_DEBOUNCE_SECONDS)
-        async with self._io_lock:
-            self._require_current_request(epoch)
-            if generation != self._channel_generations[index]:
-                return
-            self._active_command = asyncio.current_task()
-            try:
-                state = await self.client.set_channel(index, value, expected_state=self.data)
-            except asyncio.CancelledError:
-                self._read_failed()
-                self.async_set_update_error(UpdateFailed("Controller command was cancelled"))
-                raise
-            except (AquariusError, ProtocolError, OSError, TimeoutError):
-                self._read_failed()
-                error = UpdateFailed("Controller command could not be verified; read again")
-                self.async_set_update_error(error)
-                raise HomeAssistantError(
-                    "The change was not confirmed. No command was retried. "
-                    "Wait for a successful read before making another change."
-                ) from None
-            finally:
-                self._active_command = None
-            self._read_succeeded()
-            self.async_set_updated_data(state)
+        async with self._command_window(deadline):
+            await asyncio.sleep(CHANNEL_DEBOUNCE_SECONDS)
+            async with self._io_lock:
+                self._check_command_deadline(deadline)
+                self._require_current_request(epoch)
+                if generation != self._channel_generations[index]:
+                    return
+                self._active_command = asyncio.current_task()
+                try:
+                    state = await self.client.set_channel(index, value, expected_state=self.data)
+                except (AquariusError, ProtocolError, OSError, TimeoutError):
+                    self._read_failed()
+                    error = UpdateFailed("Controller command could not be verified; read again")
+                    self.async_set_update_error(error)
+                    raise HomeAssistantError(
+                        "The change was not confirmed. No command was retried. "
+                        "Wait for a successful read before making another change."
+                    ) from None
+                self._read_succeeded()
+                self.async_set_updated_data(state)
 
     async def async_set_mode(self, option: str) -> None:
         """Change mode only for an explicit select action, never during setup."""
+        deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
         if option not in MODE_OPTIONS:
             raise ServiceValidationError("Unsupported operating mode")
         self._require_write_supported()
         epoch = self._command_epoch
         # An explicit mode choice supersedes slider changes still being debounced.
         self._channel_generations = [value + 1 for value in self._channel_generations]
-        async with self._io_lock:
-            self._require_current_request(epoch)
-            self._active_command = asyncio.current_task()
-            try:
-                state = await self.client.set_mode(MODE_OPTIONS[option], expected_state=self.data)
-            except asyncio.CancelledError:
-                self._read_failed()
-                self.async_set_update_error(UpdateFailed("Controller mode change was cancelled"))
-                raise
-            except (AquariusError, ProtocolError, OSError, TimeoutError):
-                self._read_failed()
-                self.async_set_update_error(UpdateFailed("Controller mode change was not verified"))
-                raise HomeAssistantError(
-                    "The mode change was not confirmed. No command was retried. "
-                    "Wait for a successful read before making another change."
-                ) from None
-            finally:
-                self._active_command = None
-            self._read_succeeded()
-            self.async_set_updated_data(state)
+        async with self._command_window(deadline):
+            async with self._io_lock:
+                self._check_command_deadline(deadline)
+                self._require_current_request(epoch)
+                self._active_command = asyncio.current_task()
+                try:
+                    state = await self.client.set_mode(
+                        MODE_OPTIONS[option], expected_state=self.data
+                    )
+                except (AquariusError, ProtocolError, OSError, TimeoutError):
+                    self._read_failed()
+                    self.async_set_update_error(
+                        UpdateFailed("Controller mode change was not verified")
+                    )
+                    raise HomeAssistantError(
+                        "The mode change was not confirmed. No command was retried. "
+                        "Wait for a successful read before making another change."
+                    ) from None
+                self._read_succeeded()
+                self.async_set_updated_data(state)
 
     async def async_prepare_unload(self) -> None:
         """Stop accepting commands before native platform unloading can yield."""

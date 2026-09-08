@@ -36,9 +36,9 @@ def _schema(defaults: dict | None = None) -> vol.Schema:
     defaults = defaults or {}
     return vol.Schema(
         {
-            vol.Required(CONF_HOST, default=defaults.get(CONF_HOST, "")): vol.All(
-                str, _normalize_host
-            ),
+            # The native form serializer supports declarative types, not our
+            # normalization callable. Validate/normalize submitted text below.
+            vol.Required(CONF_HOST, default=defaults.get(CONF_HOST, "")): str,
             vol.Required(CONF_PORT, default=defaults.get(CONF_PORT, DEFAULT_PORT)): vol.All(
                 vol.Coerce(int), vol.Range(min=1, max=65535)
             ),
@@ -91,15 +91,21 @@ class AquariusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             user_input = _schema()(user_input)
-            if reason := self._duplicate_reason(user_input):
-                return self.async_abort(reason=reason)
-            if error := await self._async_validate(user_input):
-                errors["base"] = error
+            try:
+                user_input[CONF_HOST] = _normalize_host(user_input[CONF_HOST])
+            except vol.Invalid:
+                errors[CONF_HOST] = "invalid_host"
                 self._target = None
             else:
-                # The protocol has no verified immutable identifier. The native
-                # entry_id, never the host or raw controller bytes, anchors entities.
-                return self.async_create_entry(title=NAME, data=user_input)
+                if reason := self._duplicate_reason(user_input):
+                    return self.async_abort(reason=reason)
+                if error := await self._async_validate(user_input):
+                    errors["base"] = error
+                    self._target = None
+                else:
+                    # The protocol has no verified immutable identifier. The native
+                    # entry_id, never the host or raw controller bytes, anchors entities.
+                    return self.async_create_entry(title=NAME, data=user_input)
         return self.async_show_form(step_id="user", data_schema=_schema(user_input), errors=errors)
 
     async def async_step_reconfigure(self, user_input=None) -> FlowResult:
@@ -108,15 +114,21 @@ class AquariusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             user_input = _schema()(user_input)
-            if reason := self._duplicate_reason(user_input, entry.entry_id):
-                return self.async_abort(reason=reason)
-            if error := await self._async_validate(user_input):
-                errors["base"] = error
+            try:
+                user_input[CONF_HOST] = _normalize_host(user_input[CONF_HOST])
+            except vol.Invalid:
+                errors[CONF_HOST] = "invalid_host"
                 self._target = None
             else:
-                return self.async_update_reload_and_abort(
-                    entry, data_updates=user_input, reason="reconfigure_successful"
-                )
+                if reason := self._duplicate_reason(user_input, entry.entry_id):
+                    return self.async_abort(reason=reason)
+                if error := await self._async_validate(user_input):
+                    errors["base"] = error
+                    self._target = None
+                else:
+                    return self.async_update_reload_and_abort(
+                        entry, data_updates=user_input, reason="reconfigure_successful"
+                    )
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=_schema(user_input or dict(entry.data)),

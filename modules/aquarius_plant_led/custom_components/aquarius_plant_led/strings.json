@@ -14,6 +14,7 @@
       }
     },
     "error": {
+      "invalid_host": "Enter an IP address or hostname without a URL, path, or port.",
       "cannot_connect": "Could not read the controller. Check its address and connectivity from Home Assistant.",
       "invalid_response": "The controller returned an unsupported or invalid protocol reply. No settings were changed."
     },

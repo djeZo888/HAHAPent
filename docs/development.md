@@ -224,3 +224,11 @@ Temporary Python packages were fetched, signature-verified and extracted with
 Alpine's [package tooling](https://wiki.alpinelinux.org/wiki/Apk); they were not
 installed into the SSH App's package database. All target configuration, helper
 transport and raw reports remain outside Git.
+
+Continuation source checks: 304 synthetic unit tests PASS (57.673 seconds),
+47 native HA tests PASS, Ruff/catalog/bundle checks PASS. The 26-test autonomous
+worker suite and independent review preceded hardware revalidation. Five bounded
+channel tests passed; F timed out during its first recovery read, failed the
+ten-second bound, and was later deliberately restored. See current Task 003
+evidence for measured timings and the required recovery-read retry repair.
+Actual Manager 0.1.2 App update, Ingress refresh and cache persistence passed.

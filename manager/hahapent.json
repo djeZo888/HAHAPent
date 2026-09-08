@@ -44,6 +44,43 @@
         "hardware_controls": "blocked",
         "live_ha_acceptance": "not_tested"
       }
+    },
+    {
+      "id": "aquarius-plant-led",
+      "name": "Aquarius Plant LED",
+      "description": "Read-only lifecycle candidate with repaired native setup, TCP confirmation and action deadlines. Writes remain disabled pending completed bounded recovery and native-control acceptance. Use the final working release when available.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.1.1/modules/aquarius_plant_led/README.md",
+      "integration_domain": "aquarius_plant_led",
+      "version": "0.1.1",
+      "minimum_manager_version": "0.1.2",
+      "required_features": [],
+      "home_assistant": {
+        "min_version": "2026.9.1",
+        "max_version_exclusive": "2026.9.2"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/aquarius-plant-led-v0.1.1/aquarius-plant-led-0.1.1.zip",
+        "sha256": "079e4c037c68ff7ea8d67c1d6011f49bab2aaa59c85576ec4d903a58a2536588",
+        "format": "zip"
+      },
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "7a640b3df6e47056554f19254493fac6fdfcdfdc",
+        "source_path": "modules/aquarius_plant_led"
+      },
+      "license": {
+        "status": "pending"
+      },
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "extensions": {
+        "release_status": "read-only-candidate",
+        "hardware_controls": "blocked",
+        "live_ha_acceptance": "not_tested"
+      }
     }
   ],
   "minimum_manager_version": "0.1.0",
