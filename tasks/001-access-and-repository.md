@@ -1,7 +1,8 @@
 # Task 001 — access and repository verification
 
 Evidence checkpoint: 2026-09-08T21:42:41+02:00 (Europe/Ljubljana). Task 001 only.
-Hosted source-check verification is pending at this checkpoint.
+Final evidence update: 2026-09-08T21:47:51+02:00.
+Conclusion: **READY FOR TASK 002**. Task 002 still requires its own assignment.
 
 ## Capability evidence
 
@@ -13,8 +14,8 @@ Hosted source-check verification is pending at this checkpoint.
 | API Contents | PASS | Created the useful Task 001 branch ref at the verified safe commit using the API |
 | Issues | PASS | Created [Task 001 issue #1](https://github.com/djeZo888/HAHAPent/issues/1) |
 | Repository Administration | PASS | Updated the project description; existing rules/security settings inspected and preserved |
-| Pull requests | NOT_TESTED | Source checkpoint PR pending |
-| Actions/workflows | NOT_TESTED | Actions enabled; completed hosted source-check run still required |
+| Pull requests | PASS | Created [PR #2](https://github.com/djeZo888/HAHAPent/pull/2); source checkpoint checks completed successfully |
+| Actions/workflows | PASS | Workflow-file Git write and completed hosted runs on Python 3.9 and 3.13; dispatch/cancel/admin API operations not tested |
 | Release API | NOT_TESTED | No product release is needed or created |
 | Optional GitHub SSH deploy key | NOT_REQUIRED | Persistent scoped token-based HTTPS Git works |
 | HA REST | PASS | Identified HA before credentials; authenticated `/api/` and `/api/config` |
@@ -70,8 +71,8 @@ under `~/.local/state/hahapent/` and other private project directories.
 
 ## Source verification and completion gate
 
-Local synthetic tests, Ruff, and draft catalog validation are exercised before
-publication. Staged/history/outgoing scans include actual private-value
+Local verification: 88 synthetic tests passed on Python 3.9.6, Ruff passed,
+and the empty draft catalog validated. No dependency conflicts were found. Staged/history/outgoing scans include actual private-value
 comparison locally, filenames, all committed path aliases, commit/tag messages,
 and removed historical content. Public CI uses synthetic/pattern checks only.
 
@@ -80,9 +81,20 @@ Real writes above are independent checks. Administration permission may be
 removed from the token after setup if future repository administration is not
 needed; no token scope has been changed automatically. Releases remain untested.
 
-Next: complete the source checkpoint PR and hosted CI, then record the final
-readiness conclusion here. No Task 002 or Task 003 implementation is authorized
-by this checkpoint.
+The remotely verified source checkpoint is
+[`ecbfaeb7cb8d74063021d49c8aca9efab36101a1`](https://github.com/djeZo888/HAHAPent/commit/ecbfaeb7cb8d74063021d49c8aca9efab36101a1).
+Both [push CI](https://github.com/djeZo888/HAHAPent/actions/runs/34270701339) and
+[PR CI](https://github.com/djeZo888/HAHAPent/actions/runs/34270756867) completed
+with `success`, including both Python matrix jobs. These references identify
+the tested implementation checkpoint; later evidence-only commits and the
+merge are checked again before final completion. Final merge references are
+retained in the private installation report and the task response.
+
+No required access prerequisite remains unresolved. No owner action is needed
+for bootstrap. Token-to-login binding and password authentication remain
+unverified; the confirmed owner token and dedicated key establish the required
+workflow. Full backup restoration and disruptive restart tests are deferred to
+an explicitly authorized plan. Task 002 and Task 003 were not implemented.
 
 - [Task 002: initial Suite Manager](002-suite-manager.md) is next after Task 001.
 - [Task 003: LED integration](003-led-integration.md) awaits owner protocol and

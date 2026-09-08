@@ -75,8 +75,8 @@ Never force-push or rewrite shared history.
 
 ## Task 001 verification record
 
-Local source checks completed on 2026-09-08 (Europe/Ljubljana). Hosted checks
-are recorded separately after the pushed commit finishes. The full sanitized
+Evidence updated 2026-09-08T21:47:51+02:00 (Europe/Ljubljana). The tested
+implementation checkpoint and completed hosted runs are linked below. The full sanitized
 access and repository report belongs in
 [Task 001](../tasks/001-access-and-repository.md); private reports remain under
 `~/.local/state/hahapent/`.
@@ -86,9 +86,9 @@ access and repository report belongs in
 | Unit tests | `PASS` | 88 synthetic tests; Python 3.9.6 |
 | Catalog validation | `PASS` | Empty draft catalog and schema; offline metadata only |
 | Ruff | `PASS` | Repository Python lint |
-| Staged/outgoing secret checks | `NOT_TESTED` | Required before each push |
-| Remote commit verification | `PASS` | Initial privacy checkpoint matched remote main; source checkpoint verification follows |
-| Completed CI | `NOT_TESTED` | Requires completed run for that commit |
+| Staged/outgoing secret checks | `PASS` | Exact private values plus patterns, paths, history and messages; repeated before each push |
+| Remote commit verification | `PASS` | Initial privacy checkpoint and source commit `ecbfaeb` independently matched remote heads |
+| Completed CI | `PASS` | [Push run](https://github.com/djeZo888/HAHAPent/actions/runs/34270701339) and [PR run](https://github.com/djeZo888/HAHAPent/actions/runs/34270756867); Python 3.9 and 3.13 |
 
 Use `PASS`, `FAIL`, `BLOCKED`, `NOT_TESTED`,
 `AVAILABLE_NOT_EXERCISED`, and `NOT_REQUIRED` as defined in
