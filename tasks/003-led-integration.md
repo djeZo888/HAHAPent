@@ -75,12 +75,24 @@ automatically overwriting an unknown state, but its initial failure path did not
 complete restoration inside ten seconds. This is a failed safeguard outcome,
 not a successful bounded control test.
 
+Private monotonic timestamps show the channel restoration command was sent
+514.9 seconds after the initial write and its readback was confirmed at 517.0
+seconds (about 8 minutes 37 seconds). Original Automatic mode was confirmed at
+608.7 seconds (about 10 minutes 9 seconds). The ten-second limit was exceeded
+substantially; these timings must not be described as a successful bounded test.
+
 A separate, guarded recovery first required fresh state to equal the known test
 result. It restored the original six values, but Automatic mode did not apply
 in that sequence. A subsequent mode-only recovery kept its connection open for
 a bounded response and then independently read the original values and Automatic
 mode. Recovery passed. There was no channel sweep, shutdown, schedule write,
 Shelly action or further control testing.
+
+A later read-only check still reported Automatic mode but different channel
+values than the original snapshot. Those later values were not overwritten;
+the integration cannot identify their cause conclusively from these packets.
+Recovery's original-value match is evidence at the recovery time, not a claim
+that automatic operation freezes those values indefinitely.
 
 The exact cause of immediate reconnect failure and command-sequence behavior is
 unresolved. HA-side SSH/netcat transport lifetime, controller timing, and actual

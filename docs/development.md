@@ -121,6 +121,8 @@ first bounded hardware test failed its reconnect/restoration window. The origina
 lamp values and Automatic mode were subsequently restored and confirmed. This
 failure and the installed Manager's catalog delivery constraint are recorded in
 [Task 003](../tasks/003-led-integration.md), separately from software tests.
+Recovery was confirmed 517.0 seconds after the initial write for channel values
+and 608.7 seconds for the original mode; the ten-second test limit was not met.
 
 Coordinator verification on 2026-09-09 (Europe/Ljubljana):
 
