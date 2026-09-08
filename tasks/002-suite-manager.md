@@ -41,3 +41,23 @@ this repository. Task 003 is not authorized; license selection remains pending.
 
 Evidence is recorded here as work completes. Private installation-specific data
 stays under `~/.local/state/hahapent/`; no unexecuted check is reported as PASS.
+
+### Candidate checkpoint
+
+- Read-only API/SSH baseline: PASS, run once using existing protected access.
+- Fresh encrypted pre-change backup: PASS; downloaded privately. Isolated
+  decryption and selected configuration readability: PASS using
+  `securetar==2026.4.1`, matching the installed Supervisor. Live restoration:
+  NOT_TESTED; no live restore was performed.
+- Startup preflight: PASS for the device-free fixture lifecycle. No startup
+  automations, scripts, scenes, KNX entities, exposures or time-server
+  configuration were present. Existing KNX entry loaded and connected, project
+  present. Private file baselines must still match before each Core restart.
+- Device-free source checkpoint: `d98256a11eff686f0a925f9a4187624e59bc0cd0`;
+  [completed CI](https://github.com/djeZo888/HAHAPent/actions/runs/34274693395).
+  [Immutable A/B fixture release](https://github.com/djeZo888/HAHAPent/releases/tag/test-fixtures-v1)
+  published through the actual Releases API; uploaded sizes/digests verified.
+  This fixture publication is not the Manager release or live acceptance.
+- Local assembled candidate tests, lint, catalog and bundle checks: PASS.
+  Final count and hosted App image/live acceptance results follow below.
+- Live App deployment, Ingress lifecycle and Manager release: PENDING.

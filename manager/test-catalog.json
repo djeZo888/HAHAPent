@@ -1,0 +1,86 @@
+{
+  "extensions": {
+    "test_fixture": true
+  },
+  "minimum_manager_version": "0.1.0",
+  "modules": [
+    {
+      "artifact": {
+        "format": "zip",
+        "sha256": "0ffd7a2a977190a1634a17a3640506e836abbbf379184d36525bb04c3e949658",
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/test-fixtures-v1/hahapent-test-0.1.0.zip"
+      },
+      "dependencies": [],
+      "description": "Acceptance-test sensor reporting its loaded code version. No devices or network actions.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/d98256a11eff686f0a925f9a4187624e59bc0cd0/modules/hahapent_test/README.md",
+      "extensions": {
+        "test_fixture": true
+      },
+      "home_assistant": {
+        "max_version_exclusive": "2026.9.2",
+        "min_version": "2026.9.1"
+      },
+      "id": "hahapent-test",
+      "integration_domain": "hahapent_test",
+      "license": {
+        "status": "pending"
+      },
+      "minimum_manager_version": "0.1.0",
+      "name": "HAHAPent device-free test",
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "d98256a11eff686f0a925f9a4187624e59bc0cd0",
+        "source_path": "modules/hahapent_test"
+      },
+      "required_features": [],
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "version": "0.1.0"
+    },
+    {
+      "artifact": {
+        "format": "zip",
+        "sha256": "d60cd4492c77f6908461a6ff02919936589bf8dfd8d62ef892b486ca4da1344d",
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/test-fixtures-v1/hahapent-test-0.2.0.zip"
+      },
+      "dependencies": [],
+      "description": "Acceptance-test sensor reporting its loaded code version. No devices or network actions.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/d98256a11eff686f0a925f9a4187624e59bc0cd0/modules/hahapent_test/README.md",
+      "extensions": {
+        "test_fixture": true
+      },
+      "home_assistant": {
+        "max_version_exclusive": "2026.9.2",
+        "min_version": "2026.9.1"
+      },
+      "id": "hahapent-test",
+      "integration_domain": "hahapent_test",
+      "license": {
+        "status": "pending"
+      },
+      "minimum_manager_version": "0.1.0",
+      "name": "HAHAPent device-free test",
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "d98256a11eff686f0a925f9a4187624e59bc0cd0",
+        "source_path": "modules/hahapent_test"
+      },
+      "required_features": [],
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "version": "0.2.0"
+    }
+  ],
+  "required_features": [],
+  "schema_version": 1,
+  "source": {
+    "id": "hahapent-test",
+    "name": "HAHAPent acceptance-test fixtures",
+    "repository_url": "https://github.com/djeZo888/HAHAPent"
+  },
+  "status": "released"
+}

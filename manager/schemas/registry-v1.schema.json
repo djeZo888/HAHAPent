@@ -1,38 +1,129 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "HAHAPent catalog v1",
-  "description": "Versioned, repository-bound integration metadata. Optional extensions never grant capabilities.",
+  "title": "HAHAPent registry v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
-    "status",
-    "source",
-    "modules"
+    "installed",
+    "removed",
+    "extensions"
   ],
   "properties": {
-    "$schema": {
-      "type": "string",
-      "minLength": 1
-    },
     "schema_version": {
       "const": 1
     },
-    "status": {
-      "enum": [
-        "draft",
-        "released"
-      ]
-    },
-    "source": {
-      "$ref": "#/$defs/source"
-    },
-    "modules": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/module"
+    "installed": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,99}$"
       },
-      "maxItems": 1000
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "repository_url",
+          "module",
+          "files",
+          "installed_at",
+          "transaction_id",
+          "restart_pending"
+        ],
+        "properties": {
+          "source_id": {
+            "$ref": "#/$defs/id"
+          },
+          "repository_url": {
+            "$ref": "#/$defs/https_url"
+          },
+          "module": {
+            "$ref": "#/$defs/module"
+          },
+          "files": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 4000,
+            "propertyNames": {
+              "pattern": "^[A-Za-z0-9_./-]+$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64}|directory)$"
+            }
+          },
+          "installed_at": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "restart_pending": {
+            "type": "boolean"
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "previous": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "backup_id",
+              "entry"
+            ],
+            "properties": {
+              "backup_id": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              },
+              "entry": {
+                "$ref": "#/$defs/base_entry"
+              },
+              "extensions": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "restart_pending": {
+                "type": "boolean",
+                "description": "Conservative removal restart warning; not a Core boot observation."
+              }
+            }
+          }
+        }
+      }
+    },
+    "removed": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,99}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "backup_id",
+          "entry"
+        ],
+        "properties": {
+          "backup_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "entry": {
+            "$ref": "#/$defs/base_entry"
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "restart_pending": {
+            "type": "boolean",
+            "description": "Conservative removal restart warning; not a Core boot observation."
+          }
+        }
+      }
     },
     "extensions": {
       "type": "object",
@@ -327,31 +418,56 @@
           "maxItems": 30
         }
       }
-    }
-  },
-  "$comment": "Full-string patterns end with a negative any-character lookahead to reject trailing newlines as well.",
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "draft"
+    },
+    "base_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "repository_url",
+        "module",
+        "files",
+        "installed_at",
+        "transaction_id",
+        "restart_pending"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository_url": {
+          "$ref": "#/$defs/https_url"
+        },
+        "module": {
+          "$ref": "#/$defs/module"
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 4000,
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9_./-]+$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{64}|directory)$"
           }
+        },
+        "installed_at": {
+          "type": "string"
+        },
+        "transaction_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "restart_pending": {
+          "type": "boolean"
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
         }
-      },
-      "then": {
-        "properties": {
-          "modules": {
-            "maxItems": 0
-          }
-        }
-      },
-      "else": {
-        "required": [
-          "minimum_manager_version",
-          "required_features"
-        ]
       }
     }
-  ]
+  }
 }

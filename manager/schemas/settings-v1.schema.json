@@ -1,38 +1,47 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "HAHAPent catalog v1",
-  "description": "Versioned, repository-bound integration metadata. Optional extensions never grant capabilities.",
+  "title": "HAHAPent settings v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
-    "status",
-    "source",
-    "modules"
+    "extra_repositories",
+    "extensions"
   ],
   "properties": {
-    "$schema": {
-      "type": "string",
-      "minLength": 1
-    },
     "schema_version": {
       "const": 1
     },
-    "status": {
-      "enum": [
-        "draft",
-        "released"
-      ]
-    },
-    "source": {
-      "$ref": "#/$defs/source"
-    },
-    "modules": {
+    "extra_repositories": {
       "type": "array",
+      "maxItems": 20,
       "items": {
-        "$ref": "#/$defs/module"
-      },
-      "maxItems": 1000
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "repository_url",
+          "trusted"
+        ],
+        "properties": {
+          "source_id": {
+            "$ref": "#/$defs/id"
+          },
+          "repository_url": {
+            "$ref": "#/$defs/https_url"
+          },
+          "trusted": {
+            "const": true
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "test_mode": {
+      "type": "boolean"
     },
     "extensions": {
       "type": "object",
@@ -328,30 +337,5 @@
         }
       }
     }
-  },
-  "$comment": "Full-string patterns end with a negative any-character lookahead to reject trailing newlines as well.",
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "draft"
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "modules": {
-            "maxItems": 0
-          }
-        }
-      },
-      "else": {
-        "required": [
-          "minimum_manager_version",
-          "required_features"
-        ]
-      }
-    }
-  ]
+  }
 }

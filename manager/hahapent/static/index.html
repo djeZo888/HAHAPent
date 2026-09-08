@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>HAHAPent · Suite Manager</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="brand"><span class="brandmark" aria-hidden="true">H</span><div><span class="eyebrow">HAHAPENT</span><h1>Suite Manager</h1></div></div>
+      <span id="connection" class="badge neutral">Connecting…</span>
+    </header>
+    <main>
+      <section class="intro"><div><p class="eyebrow">YOUR HOME ASSISTANT EXTENSIONS</p><h2>A small suite. In your hands.</h2><p>Choose what to install and when to update. Your integrations run independently in Home Assistant.</p></div><button id="refresh" class="secondary">Refresh catalogs</button></section>
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <section id="operation" class="operation" aria-live="polite" hidden><div class="operation-head"><strong id="operation-title">Operation</strong><span id="operation-state"></span></div><progress id="operation-progress" aria-label="Operation progress"></progress><p id="operation-detail"></p></section>
+      <section id="restart-banner" class="notice warning" hidden><strong>Home Assistant restart needs verification</strong><p>Installed files and running code may differ. Review your startup automations and recovery backup, then use Home Assistant’s native restart control if needed. Refresh here after Core is healthy. Removed-code reminders stay with retained backups because the Manager does not track Core restarts.</p><a href="/config/dashboard" target="_top">Open Home Assistant settings ↗</a></section>
+      <nav class="tabs" aria-label="Suite Manager views"><button id="tab-catalog" class="tab active" aria-selected="true">Catalog <span id="catalog-count">0</span></button><button id="tab-installed" class="tab" aria-selected="false">Installed <span id="installed-count">0</span></button><button id="tab-sources" class="tab" aria-selected="false">Sources</button></nav>
+      <section id="view-catalog" aria-labelledby="tab-catalog"><div class="section-tools"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search integrations" aria-label="Search integrations"></label><span class="muted">Updates are always your choice</span></div><div id="catalog" class="grid"></div></section>
+      <section id="view-installed" aria-labelledby="tab-installed" hidden><div class="section-tools"><h3>Installed integrations</h3><span class="muted">Owned code and recovery stay available offline</span></div><div id="installed" class="grid"></div></section>
+      <section id="view-sources" aria-labelledby="tab-sources" hidden><div class="section-tools"><h3>Catalog sources</h3><span class="muted">Adding a source does not install code</span></div><div id="sources" class="source-list"></div><form id="source-form" class="panel"><h3>Trust an extra repository</h3><p>Only add a public GitHub repository whose publisher you trust. Download checksums verify the artifact, not its publisher.</p><label for="repository">Public GitHub repository URL</label><input id="repository" type="url" placeholder="https://github.com/owner/repository" required><label class="check"><input id="source-trust" type="checkbox" required><span>I trust this repository to publish executable integration code.</span></label><button type="submit">Add trusted source</button></form><div class="panel test-panel"><h3>Device-free test catalog</h3><p>For verifying Suite Manager’s lifecycle. Test integrations stay separate from the normal catalog.</p><label class="check"><input id="test-mode" type="checkbox"><span>Show test integrations</span></label></div></section>
+      <footer><span id="version">HAHAPent Suite Manager</span><span>Settings and recovery persist in App storage.</span></footer>
+    </main>
+    <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title">Confirm operation</h2><p id="confirm-detail"></p><div class="dialog-actions"><button value="cancel" class="secondary">Cancel</button><button id="confirm-action" value="confirm">Confirm</button></div></form></dialog>
+  </body>
+</html>

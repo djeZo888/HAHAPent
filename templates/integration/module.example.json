@@ -1,0 +1,28 @@
+{
+  "id": "example-module",
+  "name": "Example independent integration",
+  "description": "Replace with a factual description and module-specific device behavior.",
+  "documentation_url": "https://github.com/example-owner/example-repository/blob/v0.1.0/modules/example-module/README.md",
+  "integration_domain": "example_domain",
+  "version": "0.1.0",
+  "minimum_manager_version": "0.1.0",
+  "required_features": [],
+  "home_assistant": {
+    "min_version": "2026.9.1",
+    "max_version_exclusive": "2026.9.2"
+  },
+  "dependencies": [],
+  "artifact": {
+    "url": "https://github.com/example-owner/example-repository/releases/download/v0.1.0/example-module-0.1.0.zip",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "format": "zip"
+  },
+  "license": {"status": "pending"},
+  "provenance": {
+    "repository_url": "https://github.com/example-owner/example-repository",
+    "revision": "0000000000000000000000000000000000000000",
+    "source_path": "modules/example-module"
+  },
+  "restart": {"home_assistant": "required", "manager": "not_required"},
+  "extensions": {}
+}
