@@ -346,7 +346,8 @@ development SSH dependency; literal physical computer power-off was not tested.
 
 Task 003 functional acceptance is **COMPLETE**: final health and the native
 dashboard passed; Manager 0.1.2 and configured module 0.2.0 remain available.
-The final change passes required GitHub checks before its main merge. Native A01, direct F01 and the original incident
+The final change must pass required GitHub checks before its main merge.
+Native A01, direct F01 and the original incident
 retain their failed outcomes. Optical colour naming/calibration is NOT_TESTED;
 software off and program uploads are unsupported and unexercised. Other devices,
 production, KNX configuration and network/security settings were preserved.

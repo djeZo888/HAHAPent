@@ -316,9 +316,9 @@ Literal physical power-off of the development computer was not performed.
 The earlier native A01 unknown-completion FAIL, direct F01 failed recovery and
 original first-test incident remain failures; none is overwritten by these passes.
 
-Functional control acceptance is **PASS**. Final post-test health, dashboard
-handoff and the latest worker-fix CI result are being verified before the task
-is marked complete. Optical colour naming/calibration is **NOT_TESTED**; software
+Functional control acceptance, final post-test health and dashboard handoff
+are **PASS**. The final task-branch head must pass its GitHub checks before
+completion is merged into main. Optical colour naming/calibration is **NOT_TESTED**; software
 off and program uploads are unsupported and were not exercised. No other-device
 control, production access, network/security change or KNX modification occurred.
 
