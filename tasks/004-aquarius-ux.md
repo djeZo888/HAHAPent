@@ -1,8 +1,16 @@
 # Task 004 — Aquarius Plant LED UX, optical labels and software power
 
-Status: **IN PROGRESS**. This improves the existing integration and its installed
-configuration. The owner supplied the private assignment and camera share;
-neither the original attachment nor private target/capture data belongs in Git.
+Status: **DELIVERED for owner review**. Immutable **0.3.1** is installed and
+configured on test-dev; Manager **0.1.2** is running. Actual Manual/Automatic
+power, all six channel controls, rollback/update, reload, startup and read-only
+connection recovery passed. The existing identities, per-lamp labels and native
+Tile dashboard are preserved, and the original Manual lamp state is restored.
+
+Browser/iPhone gestures remain **NOT_TESTED** because the Mac stayed locked and
+no browser surface was available. D/F red versus ruby remains explicitly
+configurable, and normal Automatic interpolation is **UNDETERMINED**. These
+observational limits are not represented as passed acceptance. Private targets,
+the camera share, captures and detailed operational evidence remain outside Git.
 
 ## Baseline and scope
 
@@ -41,28 +49,38 @@ no full-brightness vector is invented. Startup and background paths never write.
   Preserve entry/entity identities, other dashboards, global Recorder settings,
   KNX, other devices, camera configuration, network/security and production.
 
-## Current checks
+## Final checks
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| Completed committed baseline | PASS | Main and completed CI verified |
-| Protected HA/SSH access | PASS | Existing token/key/host pin reused; no write probe |
-| Native computer/iPhone surface discovery | BLOCKED currently | Computer Use reports the Mac locked; unlock requested while safe work continues |
-| Private camera read-only access | PASS | Guest-scoped stream decoded; multiple frames show the LED board; no camera settings changed |
-| Optical colour mapping | PASS with one ambiguous pair | Six isolated 5% samples, exact restoration after each; four colour labels established and two red channels left configurable |
-| Direct Manual-origin software Shutdown | PASS | Mode 8 readback all-zero; Manual-first guarded saved-vector restoration and three later reads match original state; 2.746025 s |
-| Camera software-Off observation | PASS | Multiple private frames show darkness and restored lighting; no camera settings changed |
-| Native HA Manual power and Resume schedule | PASS | Manager stopped; HTTP completion, fresh TCP confirmation, exact original Manual restoration and three later reads |
-| Native HA Automatic-origin power return | NOT_TESTED | Separate bounded composite under offline review |
+| Committed baseline and protected access | PASS | Task 003 final main/CI verified; existing token and pinned SSH reused |
+| Immutable 0.3.1 publication and discovery | PASS | Exact source, public downloads, archive validation, actual Manager Refresh/Update; all earlier releases retained |
+| Synthetic and HA framework checks | PASS | 117 native framework tests with synthetic lamp data; 56 overlapping independent affected tests; 12 packaging tests; completed CI |
+| Camera read-only observation | PASS | Multiple frames and averages; no camera settings changed |
+| Optical labels | PASS for four; D/F unresolved | Six isolated 5% samples restored exactly; ambiguous red pair configurable, one grouped owner question |
+| Direct software Shutdown | PASS | Mode 8 and six zeros, optical darkness, exact Manual restoration and three later reads |
+| Native Manual power on 0.3.1 | PASS | 4.478065 s; known HTTP completion and three exact restoration reads |
+| Native Automatic power and Resume on 0.3.1 | PASS | 6.061891 s; saved Automatic origin, return to Automatic, deliberate original Manual restoration and three later reads |
+| Earlier Automatic01 on 0.3.0 | FAIL, preserved | Stale saved-origin display stopped On; exact original Manual recovery confirmed; repaired in 0.3.1 |
+| All six native Number controls on 0.3.1 | PASS | One-point changes with confirmed restoration and three later reads each; Manager stopped |
+| Rollback and final update | PASS | Actual 0.3.0 → 0.2.0 → 0.3.1 through Manager; same entry/device/entity IDs, labels and dashboard |
+| Native reload and Core startup on 0.3.1 | PASS | Manager stopped; source/configuration preserved and original state confirmed |
+| Actual read-only contention/recovery | PASS | Unavailable state, bounded holder closure, restored availability and unchanged lamp reads |
+| No unsolicited output writes | PASS in source/framework; actual state unchanged | Background paths covered by synthetic command assertions; actual lifecycle readbacks match. Native HA wire coverage is INCONCLUSIVE |
+| Native Tile dashboard | PASS for schema/save/durability | Nine Tiles, six sliders, ordinary tap disabled, icon/hold More info; existing dashboard metadata preserved |
+| Browser/iPhone gestures | NOT_TESTED | Locked Mac; browser surface unavailable. API/service checks are not touch evidence |
+| Automatic steps versus interpolation | UNDETERMINED | Short actual samples and manufacturer manual do not establish normal firmware progression |
+| Final installation and environment | PASS | Manager started, Core running, fifteen native entities available; KNX/project/startup files preserved |
+| Encrypted backup | PASS for decryption/readability | Two private backups retained; full live restore NOT_TESTED |
 
 The initial Task 004 checkpoint `beda55630fbcf743a26affccb73838cf15d15902`
 was pushed and [CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34338192756).
 A fresh encrypted backup was downloaded privately; isolated decryption and
 selected configuration readability passed. A full live restore was not tested.
-Current installed baseline retains one configuration entry/device and twelve
-available entities. Actual read-only samples show stable Manual output, which
-is preserved; they do not establish Automatic interpolation. The camera viewing
-path now works through guest-scoped MQTT/WebRTC streaming with TLS verification.
+At that initial checkpoint, the installed baseline retained one configuration
+entry/device and twelve available entities. Read-only samples showed stable
+Manual output; they did not establish Automatic interpolation. The camera viewing
+path worked through guest-scoped MQTT/WebRTC streaming with TLS verification.
 No camera configuration was changed.
 
 ## Actual direct Shutdown evidence
@@ -82,14 +100,16 @@ The final exact Manual mode/vector matched the baseline. Three later independent
 read-only samples confirmed the same state. Multiple camera frames showed actual
 darkness and return of the prior lighting. This is actual device/optical evidence,
 separate from offline tests, and admits only the exact validated raw power profile.
-Automatic-origin power, versioned HA memory and native service acceptance remain
-pending. Current lamp percentages and all captures remain private.
+At that checkpoint, Automatic-origin power, versioned HA memory and native
+service acceptance were still pending. Lamp percentages and all captures remain
+private.
 
 The existing native entry was temporarily disabled through HA during direct TCP
 experiments to release its polling connection. Its identity/configuration were
-preserved; the final installation must be re-enabled and configured. No Core
-restart, other integration change or network/security change was needed for this
-pause. The earlier detached read-only observer completed before testing.
+preserved, and the entry was subsequently re-enabled for native 0.3.0 acceptance.
+No Core restart, other integration change or network/security change was needed
+for this temporary pause. The earlier detached read-only observer completed
+before testing.
 
 ## Immutable UX candidate and native acceptance gate
 
@@ -99,7 +119,8 @@ The immutable [0.3.0 candidate](https://github.com/djeZo888/HAHAPent/releases/ta
 was published from that exact source. Public unauthenticated downloads matched
 all locally built assets, and Manager archive validation passed. The ZIP SHA-256
 is `02973dfe98d440e999769c6c550f5ae53e95765b6d02ff8b31d4c47ab8071fac`.
-Existing releases are retained. Actual updated-module acceptance remains pending.
+Existing releases are retained. Actual updated-module acceptance was still
+pending at that publication checkpoint; the later results and incident follow.
 
 The native HA service worker passed 29 independent synthetic/loopback tests,
 including unknown HTTP completion and exclusive TCP handling. Its frozen hashes
@@ -209,10 +230,10 @@ observation after successful Resume and Off. The worker did **not** send On.
 Deliberate guarded cleanup restored the exact original Manual state in
 **5.551953 seconds**, followed by three matching independent reads. The failure
 and full private report are preserved. Further lamp writes paused for repair.
-Source investigation found that Off publishes entity data before confirming its
-persisted origin; the Light's cached `on_behavior` can therefore still describe
+Source investigation found that 0.3.0 published Off entity data before confirming its
+persisted origin; the Light's cached `on_behavior` could therefore still describe
 the missing-origin fallback. A native framework reproduction and separately
-versioned repair are in progress. The saved-origin acceptance gate is retained;
+versioned repair then followed. The saved-origin acceptance gate is retained;
 the published 0.3.0 tag/assets will remain immutable.
 
 The stale-state mechanism was reproduced through actual HA REST service and
@@ -224,13 +245,97 @@ unavailable handling. No protocol/client/store or frozen worker changed.
 Author full native suite: **117 PASS**. Independent affected power/coordinator
 suite: **56 PASS**. Packaging: **12 PASS**; Ruff PASS. The
 [publication-order review](../docs/aquarius-power-publication-review.md) records
-exact hashes and failure/cancellation coverage. Corrected actual lamp acceptance
-remains pending publication and deployment of the new immutable version.
+exact hashes and failure/cancellation coverage. At that repair checkpoint, corrected actual lamp acceptance still required
+publication and deployment; the later successful results are recorded below.
+
+Repair source `e709fc49` passed
+[source CI 34346201803](https://github.com/djeZo888/HAHAPent/actions/runs/34346201803).
+The immutable [0.3.1 candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.1)
+was published from that exact source. All three public unauthenticated asset
+downloads matched the local build, and Manager archive validation passed. ZIP
+SHA-256: `285b8e1d050d7679243c3d3e8a7840fdbb1e5d451327e91cb7dd883112a025d5`.
+Catalog checkpoint `075752cec84bfff5b7c480459c908ed720476768` adds this version
+and marks 0.3.0 superseded without changing its immutable tag or assets.
+Actual corrected installation and power acceptance were separate subsequent gates.
 
 A second fresh encrypted backup passed isolated decryption/readability, retaining
 the initial backup and its private record. Actual Manager rollback to **0.2.0**
 passed. After its gated Core restart, immutable source comparison, one loaded
 entry/device, all twelve original entity IDs, versioned options and the owned
 dashboard were preserved. Three independent reads confirmed unchanged Manual
-state. The new UX entities are unavailable while the historical version is
-loaded; the final corrected version will replace it before handoff.
+state. The new UX entities were temporarily unavailable while the historical version
+was loaded; the corrected version subsequently replaced it before handoff.
+
+## Schedule progression evidence limit
+
+The [official Aqua Medic app manual, English pages 14–15](https://www.aqua-medic.de/en/download/App-Steuerung-aquarius-plant-plus~d4963#page=14)
+describes per-channel time points and point-by-point Demo playback. It does not
+specify normal Automatic interpolation or its update cadence. Demo semantics
+are not evidence for normal Automatic behavior. The brief actual Automatic
+checks establish mode selection; the fixed Manual samples cannot determine
+whether this firmware steps or interpolates. That behavior remains **UNDETERMINED**.
+No schedule was uploaded or overwritten to manufacture a transition.
+
+## Corrected 0.3.1 actual acceptance
+
+[PR 12](https://github.com/djeZo888/HAHAPent/pull/12) merged at
+`0847d53e0f5bbdef25fe0ddb5ad06a65d07bd6bb` after catalog checkpoint CI
+[34346835194](https://github.com/djeZo888/HAHAPent/actions/runs/34346835194)
+and [34346843859](https://github.com/djeZo888/HAHAPent/actions/runs/34346843859)
+completed successfully. Actual Manager Refresh discovered all five preserved
+module versions; its owned update installed 0.3.1. The gated Core restart passed
+configuration and subsequent health checks. Installed executable source matched
+`e709fc49fc8e62087ab23786707f765b9c2099dd`. The existing entry/device, twelve
+original entity IDs, fifteen native entities, per-lamp options and dashboard
+were preserved. Three post-update reads confirmed the original Manual state.
+Manager was then stopped for corrected native acceptance.
+
+Manual02 **PASS, 4.478065 seconds**: native Off confirmed Shutdown-zero and native
+On restored the saved original Manual mix. Automatic02 **PASS, 6.061891 seconds**:
+native Resume selected Automatic, native Off confirmed Shutdown-zero, the strict
+Light saved-Automatic-origin check passed, and native On returned to Automatic.
+Guarded cleanup then restored the original Manual snapshot. Both tests had known
+HTTP completion and three subsequent exact original-state readbacks. The frozen
+Automatic worker and its origin check were not weakened. Auto01 remains FAIL.
+
+All six Number services also passed again on the corrected version with Manager
+stopped. Complete excursions were A **2.720228 s**, B **3.877626 s**,
+C **2.939223 s**, D **2.778980 s**, E **2.898352 s**, and F **2.747333 s**.
+Each one-point change had known HTTP completion, confirmed restoration and three
+later exact reads. These are actual native HA/lamp tests, separate from the
+117 native-framework tests with a synthetic lamp and the overlapping 56-test
+independent review run. They do not establish browser or iPhone gestures.
+
+## Final lifecycle and handoff
+
+The merged catalog's [main CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34347190699).
+Actual 0.3.1 read-only contention produced an unavailable state after a
+**5.093193-second** query failure. The reviewed holder closed within its bound;
+after the query cooldown, native availability recovered and three independent
+reads matched the original state. No output service was called. Native reload
+then passed with three unchanged-state reads. A final gated Core restart with
+Manager stopped retained the immutable source, configuration, identities, label
+options and dashboard, while Core and KNX health checks passed.
+
+The first final-startup diagnostic series had one `AquariusError` followed by
+two exact matching reads. A subsequent availability check observed unavailable
+entities. This is consistent with exclusive-client contention; the root cause
+was not inferred as proven. A native query-only refresh recovered availability,
+then a separate three-read series matched the original Manual state. The initial
+failed diagnostic and failed availability check remain private evidence; they
+are not relabelled PASS. No output command or rollback was used for recovery.
+
+Final verification found Manager **0.1.2 started**, Core **RUNNING**, one loaded
+Aquarius entry/device, all **15** native entities available, unchanged original
+identities, and the preserved labels and nine-Tile dashboard. Startup files,
+KNX project files and Manager settings matched the protected baselines. The
+owner's original Manual lamp state is restored. No worker retains a lamp or
+camera session. No Manager rebuild, schedule upload, other-device control,
+production access or network/security/camera change was performed.
+
+The 0.3.1 release was promoted by changing metadata only; its source tag and all
+asset IDs and hashes are preserved. The embedded artifact catalog remains the
+immutable publication-time candidate snapshot; the current canonical catalog
+records completed actual acceptance. Earlier releases, including failed 0.3.0,
+remain intact. The final source/docs checkpoint must complete CI before merge;
+the final merge and CI are recorded in the Git history and owner handoff.
