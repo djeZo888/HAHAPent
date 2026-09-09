@@ -360,3 +360,35 @@ the exclusive-client fixture's Linux EOF versus macOS reset expectation; all
 three affected tests passed, with worker hashes unchanged. CI runs 346 unit
 checks, 56 native HA tests, and the actual amd64 App image/runtime checks. The
 final head must complete those checks successfully before main merge.
+
+## Task 004 verification in progress
+
+Task 004 begins from Task 003's completed main commit; its scope and separate
+actual/synthetic evidence are tracked in [Task 004](../tasks/004-aquarius-ux.md).
+The initial privacy guard rejects private camera capability links and local
+camera configuration filenames. Seventeen secret-check unit tests and Ruff
+passed. Protected API/pinned SSH access and the Task 004 startup/KNX review
+passed read-only checks. Camera frames, target data and detailed operational
+reports remain in protected state outside Git.
+
+Task 004 direct-worker gate: coordinator and independent reviewer each ran
+36 synthetic/simulated and loopback TCP tests successfully. The reviewed frozen
+worker adds modest optical holds and mode-preserving Shutdown recovery; see
+[aquarius-task004-validation-review.md](aquarius-task004-validation-review.md)
+for hashes, boundaries and fault coverage. Camera guest-stream access and frame
+decoding passed privately; colour labels and actual power behavior are still
+unvalidated at this checkpoint. The startup/KNX gate and fresh encrypted backup
+with isolated decryption/readability have passed for the authorized Task 004
+operations. No live restore was performed.
+
+Task 004 runtime: **112 native HA framework tests PASS**, **51 client tests
+PASS**, **12 module-packaging tests PASS**, and targeted Ruff checks PASS. The
+independent runtime review covers real temporary HA storage I/O, strict format
+preservation, canceled observation saves across reload/removal, power-memory
+restoration, and unchanged channel identities. See
+[aquarius-task004-runtime-review.md](aquarius-task004-runtime-review.md).
+These framework/TCP tests use synthetic lamp data. The exact software-power
+profile was separately admitted after the actual Manual-origin Shutdown and
+restoration test plus three fresh read-only confirmations; native HA power
+service acceptance remains pending. UI options and native Tile configuration
+are implemented without a custom card or Recorder changes.

@@ -47,6 +47,7 @@ FORBIDDEN_NAMES = (
     "*handoff*.txt",
     "HAHAPent_Task_*",
     "device.local.json",
+    "camera*.local.json",
     "*.xapk",
     "*.apk",
     "*.dex",
@@ -73,6 +74,13 @@ PATTERNS = (
         re.compile(rb"-----BEGIN (?:OPENSSH |RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----"),
     ),
     ("credential_url", re.compile(rb"https?://[^\s/@:]+:[^\s/@]+@")),
+    (
+        "private_camera_share",
+        re.compile(
+            rb"https?://monitor\.ui\.com/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}",
+            re.IGNORECASE,
+        ),
+    ),
 )
 
 

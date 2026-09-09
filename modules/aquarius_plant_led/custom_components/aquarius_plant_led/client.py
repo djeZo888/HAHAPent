@@ -15,6 +15,7 @@ from .protocol import (
     CHANNEL_QUERY,
     MODE_AUTOMATIC,
     MODE_MANUAL,
+    MODE_SHUTDOWN,
     SUPPORTED_CONTROL_MODES,
     SYSTEM_QUERY,
     ProtocolError,
@@ -24,6 +25,7 @@ from .protocol import (
     mode_frame,
     parse_channels,
     parse_system,
+    permute_channels,
     validate_percentage,
 )
 
@@ -148,6 +150,77 @@ class AquariusClient:
 
         return await self._execute(operation, write=True)
 
+    async def turn_off(self, expected_state: Optional[DeviceState] = None) -> DeviceState:
+        """Explicit software Shutdown, separately gated and independently confirmed."""
+
+        async def operation() -> DeviceState:
+            before = await self._prepare_write(expected_state, power=True)
+            if before.system.mode_raw == MODE_SHUTDOWN:
+                return before
+            command = mode_frame(MODE_SHUTDOWN)
+            await self._send(command)
+            after = await self._readback(before, MODE_SHUTDOWN, (command,))
+            self._verify_profile(before, after)
+            if after.system.mode_raw != MODE_SHUTDOWN or after.channels not in (
+                before.channels,
+                (0,) * 6,
+            ):
+                raise ConflictError("software Off readback was not the expected state")
+            return after
+
+        return await self._execute(operation, write=True)
+
+    async def turn_on(
+        self,
+        manual_channels: Optional[tuple[int, ...]] = None,
+        expected_state: Optional[DeviceState] = None,
+    ) -> DeviceState:
+        """Explicit On: restore a supplied remembered Manual mix or resume Automatic."""
+        if manual_channels is not None:
+            manual_channels = permute_channels(manual_channels)
+            if not any(manual_channels):
+                raise ProtocolError("Manual power restoration requires a nonzero saved mix")
+
+        async def operation() -> DeviceState:
+            before = await self._prepare_write(expected_state, power=True)
+            if before.system.mode_raw != MODE_SHUTDOWN:
+                return before
+            if manual_channels is None:
+                command = mode_frame(MODE_AUTOMATIC)
+                await self._send(command)
+                after = await self._readback(before, MODE_AUTOMATIC, (command,))
+                self._verify_profile(before, after)
+                if after.system.mode_raw != MODE_AUTOMATIC:
+                    raise ConflictError("Automatic power restoration was not confirmed")
+                return after
+            manual = mode_frame(MODE_MANUAL)
+            await self._send(manual)
+            awake = await self._readback(before, MODE_MANUAL, (manual,))
+            self._verify_profile(before, awake)
+            if awake.system.mode_raw != MODE_MANUAL:
+                raise ConflictError("Manual power restoration was not confirmed")
+            if awake.channels == manual_channels:
+                return awake
+            # Never write a channel vector while Shutdown is active. Only the
+            # observed zero-Off -> independently confirmed zero-Manual path may
+            # need the remembered mix restored after the explicit mode command.
+            if before.channels != (0,) * 6 or awake.channels != (0,) * 6:
+                raise ConflictError("Manual return contradicted the observed Off output")
+            await self._disconnect()
+            await self._connect()
+            guarded = await self._prepare_write(awake)
+            command = channel_write_frame(manual_channels, swap_cd=guarded.system.swap_cd)
+            await self._send(command)
+            await self._quarantine(MANUAL_SAVE_DELAY, (command,))
+            await self._send(manual)
+            after = await self._readback(guarded, MODE_MANUAL, (command, manual))
+            self._verify_profile(guarded, after)
+            if after.system.mode_raw != MODE_MANUAL or after.channels != manual_channels:
+                raise ConflictError("saved Manual mix was not independently confirmed")
+            return after
+
+        return await self._execute(operation, write=True)
+
     async def close(self) -> None:
         """Permanently close and cancel an active transaction without compensating writes."""
         self._closed = True
@@ -231,7 +304,9 @@ class AquariusClient:
         await self._connect()
         return await self._read_state()
 
-    async def _prepare_write(self, expected_state: Optional[DeviceState]) -> DeviceState:
+    async def _prepare_write(
+        self, expected_state: Optional[DeviceState], *, power: bool = False
+    ) -> DeviceState:
         previous = expected_state if expected_state is not None else self._last_state
         before = await self._read_state()
         if previous is None or before.system != previous.system:
@@ -242,11 +317,13 @@ class AquariusClient:
         # mode/profile or changed Manual output still indicates a conflict.
         if before.system.mode_raw != MODE_AUTOMATIC and before.channels != previous.channels:
             raise ConflictError("device state changed before command; refresh and review it")
-        if (
-            not before.system.write_supported
-            or before.system.mode_raw not in SUPPORTED_CONTROL_MODES
-        ):
+        allowed_modes = (
+            SUPPORTED_CONTROL_MODES | {MODE_SHUTDOWN} if power else SUPPORTED_CONTROL_MODES
+        )
+        if not before.system.write_supported or before.system.mode_raw not in allowed_modes:
             raise UnsupportedDeviceError("device profile or current mode is unverified for writes")
+        if power and not before.system.power_supported:
+            raise UnsupportedDeviceError("software power control is unverified for this profile")
         return before
 
     @staticmethod

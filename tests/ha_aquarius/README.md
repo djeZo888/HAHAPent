@@ -9,14 +9,25 @@ and parser, and a synthetic TCP lamp, including C/D wire mapping and ignored-wri
 echoes. All replies and targets are synthetic; no lamp or HA credentials are
 needed and no physical behavior is validated here.
 
-Version 0.2.0 ships one independently hardware-validated profile. Most action
+Version 0.3.0 ships one profile with separate channel/mode and software-power
+validation gates. Most action
 tests temporarily enable fictional profiles inside their fixture scope. A
 separate loopback test manufactures the shipped profile and exercises actual
 release admission, read-only setup/poll/reload, and explicit services. This is
 still synthetic evidence. The unvalidated-profile regression uses an empty
 allowlist and verifies that all six Number controls and both mode choices raise
-a clear read-only error without any client command. Shutdown and unknown starting
-modes remain readable but cannot admit commands.
+a clear read-only error without any client command. Unknown starting modes remain
+readable but cannot admit commands. Mode 8 admits only separately validated
+explicit power actions; ordinary Number/Select paths cannot control it.
+
+The native power suite covers ON/OFF-only Light and Resume schedule services,
+Manual-first zero-state restoration, versioned durable power memory, future and
+corrupt storage preservation, and deadline/cancellation behavior. Actual temporary
+HA storage files exercise swallowed disk-write errors and strict version types.
+Independent reload/removal regressions require old polling storage writes to
+settle before replacement or deletion. Options reload preserves existing entity
+identities, user names, and confirmed Off memory. All controller behavior in
+these tests is synthetic; actual lamp evidence belongs in the task report.
 
 Use Python 3.14.7 and the dedicated dependency lock from the repository root:
 

@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .client import AquariusClient, AquariusError, DeviceState
+from .client import AquariusClient, AquariusError, ConflictError, DeviceState
 from .const import (
     CHANNEL_DEBOUNCE_SECONDS,
     DOMAIN,
@@ -18,14 +18,21 @@ from .const import (
     MODE_OPTIONS,
     POLL_SECONDS,
 )
-from .protocol import SUPPORTED_CONTROL_MODES, ProtocolError
+from .protocol import (
+    MODE_AUTOMATIC,
+    MODE_MANUAL,
+    MODE_SHUTDOWN,
+    SUPPORTED_CONTROL_MODES,
+    ProtocolError,
+)
+from .state_store import AquariusPowerMemory, PowerMemoryError
 
 _LOGGER = logging.getLogger(__name__)
 EXPLICIT_COMMAND_TIMEOUT = 3.0
 
 
 class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
-    """Read after writes, back off after errors, and never restore or replay output."""
+    """Verify explicit actions; lifecycle reads never restore or replay output."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, client: AquariusClient) -> None:
         super().__init__(
@@ -41,9 +48,24 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         self._failures = 0
         self._stopped = False
         self._quiescing = False
+        self._resuming = False
         self._channel_generations = [0] * 6
         self._command_epoch = 0
         self._active_command: asyncio.Task | None = None
+        self._active_read: asyncio.Task | None = None
+        self.power_memory = AquariusPowerMemory(hass, entry.entry_id)
+
+    async def async_load_power_memory(self) -> None:
+        """Read HA memory without issuing any lamp command."""
+        await self.power_memory.async_load()
+
+    async def _remember_observation(self, state: DeviceState) -> None:
+        try:
+            await self.power_memory.async_observe(state)
+        except PowerMemoryError:
+            # Device readback is still truthful; unsafe persistence is enforced
+            # before Off, and missing Manual memory falls back to the schedule.
+            _LOGGER.warning("Aquarius power memory could not be saved")
 
     def _read_failed(self) -> None:
         # Recovery permits new user actions, never actions queued before a fault.
@@ -59,10 +81,14 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
 
     async def _async_update_data(self) -> DeviceState:
         async with self._io_lock:
-            if self._stopped:
+            if self._stopped or (self._quiescing and not self._resuming):
                 raise UpdateFailed("Integration is stopping")
+            self._active_read = asyncio.current_task()
             try:
                 state = await self.client.refresh()
+                self._read_succeeded()
+                await self._remember_observation(state)
+                return state
             except asyncio.CancelledError:
                 self._read_failed()
                 self.async_set_update_error(UpdateFailed("Controller read was cancelled"))
@@ -70,8 +96,8 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
             except (AquariusError, ProtocolError, OSError, TimeoutError):
                 self._read_failed()
                 raise UpdateFailed("Unable to read the Aquarius controller") from None
-            self._read_succeeded()
-            return state
+            finally:
+                self._active_read = None
 
     def _require_current_state(self) -> None:
         if self._stopped or self._quiescing or not self.last_update_success or self.data is None:
@@ -97,6 +123,20 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                 "Controller communication changed after this request. "
                 "Review the current state and submit a new change."
             )
+
+    def _require_power_supported(self) -> None:
+        self._require_current_state()
+        if not self.data.system.power_supported:
+            raise ServiceValidationError(
+                "Software On/Off has not been validated for this controller profile"
+            )
+        if self.data.system.mode_raw not in (MODE_AUTOMATIC, MODE_MANUAL, MODE_SHUTDOWN):
+            raise ServiceValidationError("The controller is in an unsupported operating mode")
+
+    def _require_power_request(self, epoch: int) -> None:
+        self._require_power_supported()
+        if epoch != self._command_epoch:
+            raise HomeAssistantError("Controller communication changed; submit a new action")
 
     @asynccontextmanager
     async def _command_window(self, deadline: float):
@@ -163,6 +203,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                     ) from None
                 self._read_succeeded()
                 self.async_set_updated_data(state)
+                await self._remember_observation(state)
 
     async def async_set_mode(self, option: str) -> None:
         """Change mode only for an explicit select action, never during setup."""
@@ -193,28 +234,115 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                     ) from None
                 self._read_succeeded()
                 self.async_set_updated_data(state)
+                await self._remember_observation(state)
+
+    async def async_turn_off(self) -> None:
+        """Persist fresh origin before a single explicit software Off command."""
+        deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
+        self._require_power_supported()
+        epoch = self._command_epoch
+        self._channel_generations = [value + 1 for value in self._channel_generations]
+        async with self._command_window(deadline):
+            async with self._io_lock:
+                self._check_command_deadline(deadline)
+                self._require_power_request(epoch)
+                self._active_command = asyncio.current_task()
+                try:
+                    observed = self.data
+                    before = await self.client.refresh()
+                    if before.system != observed.system or (
+                        before.system.mode_raw != MODE_AUTOMATIC
+                        and before.channels != observed.channels
+                    ):
+                        raise ConflictError("controller state changed before Off")
+                    self.async_set_updated_data(before)
+                    self._require_power_request(epoch)
+                    if before.system.mode_raw == MODE_SHUTDOWN:
+                        return
+                    await self.power_memory.async_prepare_off(before)
+                    self._check_command_deadline(deadline)
+                    self._require_power_request(epoch)
+                    state = await self.client.turn_off(expected_state=before)
+                except PowerMemoryError:
+                    raise HomeAssistantError(
+                        "Off was not sent because its return state could not be saved"
+                    ) from None
+                except (AquariusError, ProtocolError, OSError, TimeoutError):
+                    self._read_failed()
+                    self.async_set_update_error(UpdateFailed("Software Off was not confirmed"))
+                    raise HomeAssistantError(
+                        "Off was not confirmed. No command was retried"
+                    ) from None
+                self._read_succeeded()
+                self.async_set_updated_data(state)
+                try:
+                    await self.power_memory.async_confirm_off(state)
+                except PowerMemoryError:
+                    raise HomeAssistantError(
+                        "Off was confirmed but its return state could not be saved. "
+                        "On will resume the lamp's stored schedule."
+                    ) from None
+
+    async def async_turn_on(self, *, resume_schedule: bool = False) -> None:
+        """Restore remembered Manual output or explicitly resume the stored schedule."""
+        # Resume works from normal modes without requiring the separate Off gate.
+        if resume_schedule and self.data is not None and self.data.system.mode_raw != MODE_SHUTDOWN:
+            await self.async_set_mode("automatic_program")
+            return
+        deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
+        self._require_power_supported()
+        epoch = self._command_epoch
+        self._channel_generations = [value + 1 for value in self._channel_generations]
+        async with self._command_window(deadline):
+            async with self._io_lock:
+                self._check_command_deadline(deadline)
+                self._require_power_request(epoch)
+                self._active_command = asyncio.current_task()
+                manual, _reason = self.power_memory.manual_restore(self.data)
+                try:
+                    state = await self.client.turn_on(
+                        manual_channels=None if resume_schedule else manual,
+                        expected_state=self.data,
+                    )
+                except (AquariusError, ProtocolError, OSError, TimeoutError):
+                    self._read_failed()
+                    self.async_set_update_error(UpdateFailed("Software On was not confirmed"))
+                    raise HomeAssistantError(
+                        "On was not confirmed. No command was retried"
+                    ) from None
+                self._read_succeeded()
+                self.async_set_updated_data(state)
+                await self._remember_observation(state)
 
     async def async_prepare_unload(self) -> None:
         """Stop accepting commands before native platform unloading can yield."""
         self._quiescing = True
         self._command_epoch += 1
-        task = self._active_command
-        if task is not None and task is not asyncio.current_task():
+        tasks = {
+            task
+            for task in (self._active_command, self._active_read)
+            if task is not None and task is not asyncio.current_task()
+        }
+        for task in tasks:
             task.cancel()
-            await asyncio.gather(task, return_exceptions=True)
+        if tasks:
+            # A read includes its observation save. Settle that write before a
+            # replacement coordinator can load memory or save a new Off intent.
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def async_resume_after_failed_unload(self) -> None:
         """Read current state before permitting new actions after failed unloading."""
+        self._resuming = True
         try:
             await self.async_refresh()
         finally:
+            self._resuming = False
             self._quiescing = False
 
     async def async_shutdown(self) -> None:
         """Invalidate pending slider work and release the client without writes."""
         self._stopped = True
-        self._quiescing = True
-        self._command_epoch += 1
+        await self.async_prepare_unload()
         await super().async_shutdown()
         # Client close cancels any active transaction. Do not wait behind that
         # transaction's lock and let a command continue during unloading.

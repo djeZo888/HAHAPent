@@ -8,9 +8,23 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
 from .client import AquariusClient, AquariusError
-from .const import DEFAULT_PORT, DOMAIN, NAME
+from .const import (
+    CHANNEL_KEYS,
+    CHANNEL_LABEL_CHOICES,
+    CHANNEL_LABELS_VERSION,
+    CONF_CHANNEL_LABELS,
+    CONF_CHANNEL_LABELS_VERSION,
+    DEFAULT_PORT,
+    DOMAIN,
+    NAME,
+    InvalidChannelLabels,
+    channel_labels_from_options,
+    default_channel_labels,
+    normalize_channel_labels,
+)
 from .protocol import ProtocolError
 
 
@@ -54,6 +68,12 @@ class AquariusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._target: tuple[str, int] | None = None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry) -> config_entries.OptionsFlow:
+        """Labels are local presentation settings; editing them never writes output."""
+        return AquariusOptionsFlow()
 
     @callback
     def is_matching(self, other_flow) -> bool:
@@ -134,3 +154,50 @@ class AquariusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=_schema(user_input or dict(entry.data)),
             errors=errors,
         )
+
+
+class AquariusOptionsFlow(config_entries.OptionsFlowWithReload):
+    """Persist versioned per-lamp channel labels and refresh native entity names."""
+
+    async def async_step_init(self, user_input=None) -> FlowResult:
+        version = self.config_entry.options.get(CONF_CHANNEL_LABELS_VERSION)
+        if version is not None and (type(version) is not int or version != CHANNEL_LABELS_VERSION):
+            return self.async_abort(reason="unsupported_label_version")
+
+        labels = channel_labels_from_options(self.config_entry.options)
+        errors = {}
+        if user_input is not None:
+            try:
+                labels = normalize_channel_labels(user_input)
+            except InvalidChannelLabels as error:
+                errors[error.field] = error.reason
+                labels.update(
+                    {
+                        key: value
+                        for key, value in user_input.items()
+                        if key in CHANNEL_KEYS and isinstance(value, str)
+                    }
+                )
+            else:
+                return self.async_create_entry(
+                    title="",
+                    data={
+                        **self.config_entry.options,
+                        CONF_CHANNEL_LABELS_VERSION: CHANNEL_LABELS_VERSION,
+                        CONF_CHANNEL_LABELS: labels,
+                    },
+                )
+        defaults = default_channel_labels()
+        schema = vol.Schema(
+            {
+                vol.Required(key, default=labels[key]): SelectSelector(
+                    SelectSelectorConfig(
+                        options=[defaults[key], *CHANNEL_LABEL_CHOICES],
+                        custom_value=True,
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                )
+                for key in CHANNEL_KEYS
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Connect an Aquarius Plant LED controller",
-        "description": "Enter the controller's local address to read its six channel levels and current mode. For a validated controller, adjusting any channel enters and saves Manual, pausing the automatic program. Select Automatic program to resume the existing schedule. Setup and startup only read state. Other controller profiles remain read-only.",
+        "description": "Enter the controller's local address to read its six channel levels and current mode. Adjusting a validated channel selects Manual override and pauses the stored schedule. Use Resume schedule to return to it. Setup and startup only read state. Other controller profiles remain read-only.",
         "data": {
           "host": "IP address or hostname",
           "port": "TCP port"
@@ -38,16 +38,59 @@
           "read_only": "Read-only: controller profile not validated",
           "validated_profile": "Controller profile validated for Manual and Automatic"
         }
+      },
+      "mode_status": {
+        "name": "Mode status",
+        "state": {
+          "following_schedule": "Following schedule",
+          "manual_override": "Manual override",
+          "off": "Off",
+          "unknown": "Unknown"
+        }
       }
     },
     "select": {
       "operating_mode": {
         "name": "Operating mode",
         "state": {
-          "manual": "Manual",
-          "automatic_program": "Automatic program"
+          "manual": "Manual override",
+          "automatic_program": "Following schedule"
         }
       }
+    },
+    "button": {
+      "resume_schedule": {
+        "name": "Resume schedule"
+      }
+    },
+    "light": {
+      "power": {
+        "name": "Lamp"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Channel colour labels",
+        "description": "Name each channel after identifying its colour on this lamp. Keep the Channel A–F labels wherever the mapping is unknown. Labels must be distinct plain text, at most 40 characters. This changes display names only; it does not change the lamp output or entity IDs. Names you customized in Home Assistant take precedence.",
+        "data": {
+          "channel_a": "Channel A label",
+          "channel_b": "Channel B label",
+          "channel_c": "Channel C label",
+          "channel_d": "Channel D label",
+          "channel_e": "Channel E label",
+          "channel_f": "Channel F label"
+        }
+      }
+    },
+    "error": {
+      "invalid_labels": "Provide one label for each of the six channels.",
+      "invalid_label": "Enter 1–40 characters of plain text without markup or control characters.",
+      "duplicate_label": "Give each channel a distinct label; upper and lower case do not distinguish labels."
+    },
+    "abort": {
+      "unsupported_label_version": "These labels were saved by a newer integration version. Update the integration before editing them."
     }
   }
 }
