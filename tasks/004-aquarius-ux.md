@@ -89,3 +89,19 @@ experiments to release its polling connection. Its identity/configuration were
 preserved; the final installation must be re-enabled and configured. No Core
 restart, other integration change or network/security change was needed for this
 pause. The earlier detached read-only observer completed before testing.
+
+## Immutable UX candidate and native acceptance gate
+
+Source checkpoint `bbb4b5385944ac9bd98f25086f9e0de62bcb1692` passed
+[completed CI](https://github.com/djeZo888/HAHAPent/actions/runs/34340988349).
+The immutable [0.3.0 candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.0)
+was published from that exact source. Public unauthenticated downloads matched
+all locally built assets, and Manager archive validation passed. The ZIP SHA-256
+is `02973dfe98d440e999769c6c550f5ae53e95765b6d02ff8b31d4c47ab8071fac`.
+Existing releases are retained. Actual updated-module acceptance remains pending.
+
+The native HA service worker passed 29 independent synthetic/loopback tests,
+including unknown HTTP completion and exclusive TCP handling. Its frozen hashes
+and operational conditions are in the
+[native acceptance review](../docs/aquarius-task004-ha-validation-review.md).
+These are separate from actual native HA/lamp tests.

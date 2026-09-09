@@ -118,6 +118,43 @@
         "hardware_controls": "six_channels_and_modes_validated",
         "live_ha_acceptance": "pass"
       }
+    },
+    {
+      "id": "aquarius-plant-led",
+      "name": "Aquarius Plant LED",
+      "description": "State-preserving software On/Off, clear mode status and Resume schedule, configurable six-channel labels and native Tile sliders. Only the verified profile permits controls; startup and background paths never write. See Task 004 for actual acceptance.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.3.0/modules/aquarius_plant_led/README.md",
+      "integration_domain": "aquarius_plant_led",
+      "version": "0.3.0",
+      "minimum_manager_version": "0.1.2",
+      "required_features": [],
+      "home_assistant": {
+        "min_version": "2026.9.1",
+        "max_version_exclusive": "2026.9.2"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/aquarius-plant-led-v0.3.0/aquarius-plant-led-0.3.0.zip",
+        "sha256": "02973dfe98d440e999769c6c550f5ae53e95765b6d02ff8b31d4c47ab8071fac",
+        "format": "zip"
+      },
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "bbb4b5385944ac9bd98f25086f9e0de62bcb1692",
+        "source_path": "modules/aquarius_plant_led"
+      },
+      "license": {
+        "status": "pending"
+      },
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "extensions": {
+        "release_status": "ux-candidate",
+        "hardware_controls": "direct_manual_software_power_validated",
+        "live_ha_acceptance": "pending"
+      }
     }
   ],
   "minimum_manager_version": "0.1.0",
