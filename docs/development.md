@@ -344,24 +344,26 @@ returned in 0.149–0.179 seconds, leaving the detached HA-side worker to own th
 test and cleanup. This establishes control with Manager off and no attached
 development SSH dependency; literal physical computer power-off was not tested.
 
-Task 003 functional acceptance is **COMPLETE**: final health and the native
-dashboard passed; Manager 0.1.2 and configured module 0.2.0 remain available.
-The final change must pass required GitHub checks before its main merge.
-Native A01, direct F01 and the original incident
-retain their failed outcomes. Optical colour naming/calibration is NOT_TESTED;
-software off and program uploads are unsupported and unexercised. Other devices,
+### Historical Task 003 completion checkpoint
+
+Task 003 functional acceptance completed with final health and native dashboard
+checks passing; Manager 0.1.2 and configured module 0.2.0 were left available.
+Native A01, direct F01 and the original incident retain their failed outcomes.
+At that checkpoint, optical colour naming/calibration was NOT_TESTED; software
+Off and program uploads were unsupported and unexercised. Other devices,
 production, KNX configuration and network/security settings were preserved.
 
-Final checkpoint: native dashboard rendering and final Core/KNX/Manager/module
-health passed; the owner receives private dashboard/device/entity links.
-Manager is running and module 0.2.0 remains configured in Automatic program.
-Release promotion preserved the tag and every asset. Final tests correct only
-the exclusive-client fixture's Linux EOF versus macOS reset expectation; all
-three affected tests passed, with worker hashes unchanged. CI runs 346 unit
-checks, 56 native HA tests, and the actual amd64 App image/runtime checks. The
-final head must complete those checks successfully before main merge.
+The owner received private dashboard/device/entity links. Manager was running
+and module 0.2.0 was configured in Automatic program. Release promotion preserved
+the tag and every asset. Final tests corrected only the exclusive-client
+fixture's Linux EOF versus macOS reset expectation; all three affected tests
+passed, with worker hashes unchanged. CI ran 346 unit checks, 56 native HA tests,
+and the amd64 App image/runtime checks. Task 003's final main commit
+`cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24` passed
+[completed main CI](https://github.com/djeZo888/HAHAPent/actions/runs/34293970401).
+Task 004's current installed version and lamp-state evidence follow below.
 
-## Task 004 verification in progress
+## Task 004 verification and delivered release
 
 Task 004 begins from Task 003's completed main commit; its scope and separate
 actual/synthetic evidence are tracked in [Task 004](../tasks/004-aquarius-ux.md).
@@ -390,7 +392,7 @@ restoration, and unchanged channel identities. See
 These framework/TCP tests use synthetic lamp data. The exact software-power
 profile was separately admitted after the actual Manual-origin Shutdown and
 restoration test plus three fresh read-only confirmations; native HA power
-service acceptance remains pending. UI options and native Tile configuration
+service acceptance was still pending at that checkpoint. UI options and native Tile configuration
 are implemented without a custom card or Recorder changes.
 
 Task 004 installed acceptance checkpoint: immutable 0.3.0 was discovered and
@@ -402,7 +404,7 @@ labels were established; the red pair remains configurable. Native Manual
 power and Resume schedule passed with Manager stopped. Native options and
 Tile dashboard persistence passed independent private storage checks. Actual
 iPhone gestures remain untested; source/schema checks are identified separately.
-See the current task report for actual timings and remaining acceptance.
+See the current task report for later acceptance and actual timings.
 
 Task 004 repair gate: the Automatic composite detected stale native Light
 origin attributes after Off and restored the exact original Manual state. The
@@ -410,4 +412,26 @@ failed actual result is preserved. Real HA REST fixtures reproduced the issue;
 candidate 0.3.1 passed 117 native framework tests, 56 independent affected tests
 and 12 packaging tests. Power memory now settles before entity publication.
 The frozen recovery worker and protocol controls are unchanged. Actual rollback
-to 0.2.0 preserved configuration/identities; final 0.3.1 revalidation is pending.
+to 0.2.0 preserved configuration/identities; subsequent 0.3.1 revalidation is
+recorded below.
+
+Task 004 final installed **0.3.1**: immutable source/public artifacts, actual
+Manager discovery/update and rollback/reupdate, stable identities/options/Tile
+configuration, Manual and Automatic power, all six Numbers, reload, Core startup
+with Manager stopped, and read-only contention/recovery **PASS**. The strict
+saved-Automatic-origin guard passed on the repaired source. Every actual control
+had known HTTP completion and three exact restoration reads. Final Manager is
+running and the original Manual state restored. The initial final-startup
+read failure and temporary unavailability were recovered using queries only;
+they remain separate failed observations in the task record.
+
+Release promotion changes metadata only. The final canonical catalog records
+actual acceptance without replacing source/tag/assets. Twelve packaging tests,
+Ruff/catalog/bundle validation and staged/outgoing privacy scans are the focused
+final checks; hosted CI additionally executes the full synthetic Python matrix,
+native HA framework tests and App runtime tests. No protected credentials enter
+CI. See [Task 004](../tasks/004-aquarius-ux.md) for exact release/CI links and
+actual timings. Browser/iPhone gestures remain NOT_TESTED, the red pair remains
+configurable and Automatic interpolation undetermined. Passive diagnostic capture
+does not prove native HA wire-level absence of writes. No full live restore was
+performed, and historical failures are preserved.

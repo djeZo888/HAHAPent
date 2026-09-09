@@ -189,9 +189,11 @@
         "manager": "not_required"
       },
       "extensions": {
-        "release_status": "ux-candidate",
+        "release_status": "validated-ux-release",
         "hardware_controls": "existing_exact_profile_validated",
-        "live_ha_acceptance": "pending"
+        "live_ha_acceptance": "native_power_channels_lifecycle_passed",
+        "touch_acceptance": "not_tested",
+        "colour_mapping": "per_lamp_options_with_ambiguous_red_pair"
       }
     }
   ],

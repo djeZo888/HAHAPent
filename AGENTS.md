@@ -3,18 +3,28 @@
 ## Current scope
 
 Tasks 001–003 are complete. Task 003's final committed baseline is
-`cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24`; Manager 0.1.2 and Aquarius Plant
-LED 0.2.0 are installed and configured on protected test-dev. Its actual native
-controls, lifecycle, startup and independence evidence remain historical in
-`tasks/003-led-integration.md`. Preserve the working installation and all
-immutable releases; do not repeat bootstrap or rebuild/redesign Suite Manager.
+`cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24`; its Manager 0.1.2 and Aquarius Plant
+LED 0.2.0 native controls, lifecycle, startup and independence evidence remain
+historical in `tasks/003-led-integration.md`. Preserve the working installation
+and all immutable releases; do not repeat bootstrap or rebuild/redesign Suite Manager.
 
-Task 004 authorizes improving this existing integration: clearer mode status
+Task 004 delivered improvements to this existing integration: clearer mode status
 and Resume schedule, configurable evidence-backed channel labels, versioned
 state-preserving software On/Off, native Tile sliders, immutable module
 publication/update, and necessary gated test-dev Core restarts. Leave the final
 version installed and configured for owner review. Current evidence belongs in
 `tasks/004-aquarius-ux.md` and `docs/development.md`.
+
+Test-dev now has immutable module 0.3.1 with the existing entry, identities,
+label options and dashboard preserved. Its source tests, independent review,
+CI, public artifact verification and actual Manual/Automatic power and six
+Number controls passed. Final native lifecycle acceptance also passed and
+Manager 0.1.2 is running.
+The original Manual lamp state is restored. Browser/iPhone touch remains
+NOT_TESTED; D/F red versus ruby stays explicitly configurable, and normal
+Automatic interpolation is undetermined. Preserve these evidence limits.
+The bounded procedures below are historical acceptance safeguards; do not infer
+a blanket grant for future physical-device experiments from this completed work.
 
 The private camera share is for read-only optical observation only. Never
 publish its URL/token, device targets, frames/video or operational evidence.
@@ -44,11 +54,12 @@ recovery and a repaired/reviewed procedure permit another attempt.
 
 The first native Automatic-origin composite failed its HA saved-origin display
 check after Off; guarded recovery and three fresh reads confirmed exact original
-Manual restoration. Lamp writes are paused while the reproduced entity-publication
-ordering bug is repaired and reviewed for a new immutable module version. Do not
-weaken the origin check or replace the published 0.3.0 tag/assets. Safe read-only
-investigation, backups and no-output-write lifecycle work continue. Corrected
-bounded revalidation remains authorized after offline repair and review pass.
+Manual restoration. The reproduced entity-publication ordering bug is repaired
+and independently reviewed in 0.3.1. Verified publication, installation, health
+gates and corrected bounded Manual/Automatic revalidation have now passed.
+Do not weaken the origin check or replace the published 0.3.0 tag/assets.
+The safe investigation, backup and no-output-write lifecycle work completed
+without erasing the earlier failed result.
 
 No setup, startup, polling, reload or reconnect path may write lamp state.
 Only explicit actions may switch power or restore a saved mix. Unknown saved

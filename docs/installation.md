@@ -28,67 +28,113 @@ with a validated persistent last-known-good cache and bundled bootstrap fallback
 Refresh updates metadata only; select each integration version and action
 explicitly. Catalog source status shows freshness or refresh failure. Manager
 0.1.1 requires the App update first because its refresh covers extra sources only.
-See [Task 003](../tasks/003-led-integration.md) for actual release and acceptance
-status; a published candidate is not proof of live control validation.
+See [Task 004](../tasks/004-aquarius-ux.md) for current release and acceptance
+evidence, including retained failures and untested behavior.
 The acceptance-test catalog is separate and requires an explicit test action.
 
 # Aquarius Plant LED installation and use
 
-Release 0.2.0 provides six percentage channels and explicit Manual/Automatic
-selection for the validated controller profile. It is installed and configured
-through Manager 0.1.2 on test-dev. All six actual HA Number controls and explicit
-Manual/Automatic selection passed bounded change/readback/restoration checks
-with Manager stopped and the launching development connections ended. Configured
-Core startup with Manager stopped also passed. The
-[Task 003 report](../tasks/003-led-integration.md) records final verification
-and preserves earlier failed checks.
-The immutable [0.1.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
-and [0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.1)
-prereleases are read-only versions.
+The immutable [version 0.3.1](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.1)
+provides six intensity controls, software On/Off, clear mode status, Resume
+schedule, per-lamp labels and native Tile sliders. It fixes the saved-origin
+display issue found in 0.3.0. Source and catalog CI passed, and the
+[catalog update](https://github.com/djeZo888/HAHAPent/pull/12) merged. Version 0.3.1
+is installed and configured on test-dev with source, entity mapping, labels and
+dashboard verified. Actual Manual- and Automatic-origin power, all six Number
+services, native reload, configured Core startup with Manager stopped and
+read-only connection-contention recovery passed. The release and detailed
+acceptance record are in [Task 004](../tasks/004-aquarius-ux.md).
 
-To install the working release:
+To install or update:
 
 1. Open Suite Manager as an administrator and choose **Refresh**. Select
-   **Aquarius Plant LED**, select version **0.2.0**, then choose **Install** or
-   **Update**. Refresh itself never installs code or restarts HA.
-2. Complete the indicated Home Assistant Core restart after the backup and
-   startup-effects checks. For a new installation, open **Settings → Devices &
-   services → Add integration → Aquarius Plant LED**.
-3. Enter the provisioned controller's local IP address or hostname and TCP port
-   **8080**. Home Assistant must reach that address; a connection from the
-   development computer is unnecessary. Setup only reads controller state.
-4. Open the new Aquarius device. It exposes **Channel A** through **Channel F**,
-   each from **0 to 100%** in one-point steps, and **Operating mode**. Check the
-   **Write support** diagnostic before using controls. Unvalidated profiles
-   expose readings but reject writes explicitly.
+   **Aquarius Plant LED**, version **0.3.1**, then **Install** or **Update**.
+   Refresh changes metadata only. Version 0.3.0 is the superseded candidate with
+   the known display issue.
+   Respect the compatibility gate: this module is tested against HA 2026.9.1.
+2. Complete the indicated Core restart after the backup and startup-effects
+   checks. An existing installation keeps its configuration entry; do not add
+   another one. Open the existing Aquarius device when the entry is loaded.
+3. For a new installation, choose **Configure in HA** or **Settings → Devices &
+   services → Add integration → Aquarius Plant LED**. Enter the already
+   provisioned lamp's local IP address or hostname and TCP port **8080**.
+   The connection originates from HA; direct development-computer access is
+   unnecessary. Setup reads the controller without changing its output.
+4. Confirm the device's **Write support** and power-support information. Only
+   validated controller profiles permit controls. The device exposes **Lamp**,
+   **Mode status**, **Resume schedule**, and six percentage Number entities;
+   the existing **Operating mode** selector remains under configuration.
 
-To try a validated control, note its current percentage and the operating mode.
-Open one channel's Number control and enter a value one percentage point lower,
-or one point higher if the channel is already zero. Avoid sweeping the slider.
-Changing a channel preserves the other five current values and deliberately
-enters and saves **Manual**, pausing the stored automatic program. Wait for the
-confirmed reading, then return that channel to its noted value. If the lamp was
-following its program, select **Automatic program** in **Operating mode** to
-resume it. Keep initial checks brief and change one channel at a time.
+Use **Mode status** to distinguish **Following schedule**, **Manual override**,
+and **Off**. **Resume schedule** explicitly returns to the lamp's existing stored
+program; it does not upload or edit a schedule. Automatic percentages can change
+over time, but stepping versus interpolation has not been established.
 
-Choose **Manual** explicitly to retain the current output in Manual mode; choose
-**Automatic program** to resume the controller's existing schedule. Automatic
-operation may subsequently change percentages. These controls do not upload or
-edit schedules, map A–F to calibrated colours, or provide a software power switch.
-If an action fails or the state is unavailable, inspect a fresh reading before
-issuing another action; a failed request does not prove that the lamp ignored it.
+**Lamp Off** requests software Shutdown, leaving mains power unchanged. HA saves
+the current origin first. Explicit **On** restores a trusted saved Manual mix
+when Off originated from Manual, or resumes the stored schedule for an Automatic
+origin. Missing, incompatible or unconfirmed memory falls back to the schedule;
+it never invents full brightness. Zero percentages alone do not mean Off, and an
+unreachable lamp is unavailable. If the lamp is Off, choose On or Resume schedule
+before adjusting a channel.
 
-Setup, reconfiguration, startup, polling, reconnect and reload remain read-only.
-Only explicit controls can write a validated profile. Reconfigure the address
-for the same lamp to preserve its device and entity identity. To remove the
-integration, first delete its native HA configuration entry, then uninstall its
-owned code through Manager. Read-only update/rollback with preserved identity,
-native deletion and code removal have passed on test-dev. The final 0.2.0 release
-was then reinstalled and configured; actual controls and operation without
-Manager or the launching development connection passed separately. Other
-controller profiles and unsupported starting modes remain read-only. Optical
-colour mapping, software off, schedule editing and firmware updates are not
-supported. License selection remains pending.
+Open the integration's **Configure** options to name the six channels. Defaults
+remain **Channel A–F** until a per-lamp mapping is supplied. Choose a colour or
+a distinct short custom label; `protocol_channel` always retains A–F. Options
+preserve unique IDs, current entity IDs and owner-assigned entity names. A custom
+HA entity name takes precedence over the selected integration label. Task 004
+identified four colours on its tested lamp; D/F red versus ruby remains
+unresolved and configurable, with one grouped owner question pending. Do not
+apply that lamp's mapping as a universal default.
+
+Use the [native Tile example](examples/aquarius-tile-dashboard.yaml) with the
+existing entity IDs. It provides six `numeric-input` sliders, a Light toggle,
+read-only mode status and a Resume schedule button. Preserve other dashboards
+and views; the [migration review](aquarius-task004-dashboard-review.md) describes
+replacing only an owned view's cards. Ordinary card taps do nothing; icon tap or
+hold opens More info. A tap on the slider itself can change its value. Source,
+schema and stored-dashboard checks passed; browser/iPhone touch remains untested.
+The optional history card uses existing Recorder data. Removing that card does
+not change recording, and no global Recorder settings are changed automatically.
+
+For an initial permitted control check, note the current mode and percentage,
+change one channel by one percentage point, and wait for confirmed readback.
+Avoid sweeping the slider. A channel change enters and saves Manual while
+preserving the other five fresh values. Restore the original value after the
+check; if the original mode was Following schedule, use Resume schedule to return
+to it. If an action fails or becomes unavailable, inspect a successful fresh
+reading before another deliberate action. A failed request does not establish
+that the lamp ignored it.
+
+Setup, reconfiguration, startup, polling, reconnect and reload only read lamp
+state; saved memory is used for output restoration only by an explicit action.
+Reconfigure the address for the same lamp to preserve identity. For removal,
+delete the native HA configuration entry before uninstalling owned code through
+Manager. Rollback restores code, not lamp output, schedules or HA configuration.
+
+[Task 003](../tasks/003-led-integration.md) retains actual 0.2.0 channel/mode,
+update/rollback/removal, startup and Manager-independence results. Actual 0.3.0
+Manual power, Resume and all six Number services also passed; its first
+Automatic-origin composite failed the saved-origin display check and restored
+the original Manual state. On 0.3.1, the corrected Manual-origin test passed in
+**4.478065 seconds** and the Automatic-origin composite in **6.061891 seconds**,
+both with Manager stopped. The latter confirmed saved Automatic origin and
+native Resume/Off/On return to Automatic before deliberate exact original Manual
+restoration. Three later independent reads matched after each test. Final 0.3.1
+Number tests passed in **2.720–3.878 seconds**, each followed by three exact
+independent reads. Native reload and configured Core startup with Manager
+stopped passed, as did recovery after a bounded read-only connection hold.
+Read-contention incidents and their successful query-only recovery remain in
+the task report. Final checks confirmed Manager 0.1.2 running, all 15 Aquarius
+entities available, the original Manual state and unchanged KNX/startup files.
+Passive observation did not establish native HA wire-level no-write coverage;
+lamp readbacks and synthetic framework checks are separate evidence.
+The superseded [0.3.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.0),
+historical [0.2.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0),
+and read-only [0.1.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
+and [0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.1)
+remain immutable. Schedule editing, presets/effects, clock writes and firmware
+updates are not exposed. License selection remains pending.
 
 # Reproducible App source build
 
