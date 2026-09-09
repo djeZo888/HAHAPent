@@ -9,7 +9,7 @@ control test failed; the original lamp state was restored and further writes sto
 | --- | --- | --- |
 | [001: access and repository](../tasks/001-access-and-repository.md) | Safe repository bootstrap, synthetic checks, sanitized access evidence, verified Git/CI checkpoints | Complete; preserve its historical report |
 | [002: Suite Manager](../tasks/002-suite-manager.md) | App 0.1.1, trusted catalogs, owned code lifecycle, recovery, and device-free fixture | Complete; release 0.1.1 published, Manager healthy and installed fixture cleaned |
-| [003: LED integration](../tasks/003-led-integration.md) | Working Aquarius Plant LED installation | Manager 0.1.2 and bounded direct channel validation passed; final 0.2.0 publication, native controls and independence acceptance pending |
+| [003: LED integration](../tasks/003-led-integration.md) | Working Aquarius Plant LED installation | Release 0.2.0 installed/configured; native A–F, Manual/Automatic, lifecycle and independence PASS; complete; owner verification available |
 
 Task 002 exercised install A, native configuration, update B, rollback A, native
 removal, and code uninstall through the actual Ingress interface. It also verified
@@ -27,15 +27,30 @@ The original bounded lamp test and the first Channel F recovery both exceeded
 the ten-second limit; those failures remain in the task record. After the
 recovery worker was repaired and independently reviewed, F02 passed in 2.653872
 seconds. Together with A–E, all six channels now have successful direct-TCP
-change/readback/restoration evidence. The repaired worker and HA-service adapter
-passed 62 offline tests; adapter tests do not establish actual HA control.
+change/readback/restoration evidence. The initial repair passed 62 offline tests.
+The first native HA attempt later returned uncertain HTTP completion; an adapter
+repair released its TCP observer before delegating to HA. That reviewed repair
+passed 65 combined base/adapter tests before renewed native checks. These
+synthetic results do not themselves establish actual HA control.
 
-Module 0.2.0 source enables six A–F percentage controls and explicit Manual /
-Automatic-program selection for the validated controller profile. Other profiles
-remain read-only, as do setup, startup, polling, reconnect and reload. Final
-artifact publication/CI, actual installed 0.2.0 Number/Select controls, operation
-with Manager and the development connection stopped, and owner-ready acceptance
-remain pending. The historical read-only releases remain immutable:
+Published module 0.2.0 is installed and configured through Manager 0.1.2. Each
+actual HA A–F Number control passed a one-point change, independent changed-state
+readback, and restoration of channels and Automatic mode in 3.299–4.463 seconds.
+Explicit HA Manual-to-Automatic selection passed in 3.086 seconds. Two subsequent
+fresh TCP checks confirmed Automatic after every test. These are actual native
+HA service results, separate from the earlier direct-TCP and synthetic tests.
+
+Manager remained stopped throughout all seven controls, while detached HA-side
+workers completed after their launching SSH sessions returned in 0.149–0.179
+seconds. Configured Core startup with Manager stopped also passed. Final health,
+dashboard and CI verification are tracked in the task report; the working
+installation remains available for owner verification.
+
+Only the validated controller profile permits Manual/Automatic controls. Other
+profiles and unsupported starting modes remain read-only; setup, startup,
+polling, reconnect and reload issue queries only. Optical colour mapping and
+software off remain unsupported. The historical read-only releases and earlier
+failed native/transport tests remain in the evidence record:
 [0.1.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
 and [0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.1).
 

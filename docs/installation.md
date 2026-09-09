@@ -34,18 +34,22 @@ The acceptance-test catalog is separate and requires an explicit test action.
 
 # Aquarius Plant LED installation and use
 
-The 0.2.0 source supports six percentage channels and explicit Manual/Automatic
-selection for the validated controller profile. At this checkpoint, final 0.2.0
-publication, installation and actual HA control acceptance are pending. The
-[Task 003 report](../tasks/003-led-integration.md) is the current delivery record.
+Release 0.2.0 provides six percentage channels and explicit Manual/Automatic
+selection for the validated controller profile. It is installed and configured
+through Manager 0.1.2 on test-dev. All six actual HA Number controls and explicit
+Manual/Automatic selection passed bounded change/readback/restoration checks
+with Manager stopped and the launching development connections ended. Configured
+Core startup with Manager stopped also passed. The
+[Task 003 report](../tasks/003-led-integration.md) records final verification
+and preserves earlier failed checks.
 The immutable [0.1.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
 and [0.1.1](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.1)
 prereleases are read-only versions.
 
-Once the intended version is available in the catalog:
+To install the working release:
 
 1. Open Suite Manager as an administrator and choose **Refresh**. Select
-   **Aquarius Plant LED**, check the offered version, then choose **Install** or
+   **Aquarius Plant LED**, select version **0.2.0**, then choose **Install** or
    **Update**. Refresh itself never installs code or restarts HA.
 2. Complete the indicated Home Assistant Core restart after the backup and
    startup-effects checks. For a new installation, open **Settings → Devices &
@@ -79,8 +83,12 @@ Only explicit controls can write a validated profile. Reconfigure the address
 for the same lamp to preserve its device and entity identity. To remove the
 integration, first delete its native HA configuration entry, then uninstall its
 owned code through Manager. Read-only update/rollback with preserved identity,
-native deletion and code removal have passed on test-dev; final 0.2.0 control and
-Manager/development-connection independence checks remain pending.
+native deletion and code removal have passed on test-dev. The final 0.2.0 release
+was then reinstalled and configured; actual controls and operation without
+Manager or the launching development connection passed separately. Other
+controller profiles and unsupported starting modes remain read-only. Optical
+colour mapping, software off, schedule editing and firmware updates are not
+supported. License selection remains pending.
 
 # Reproducible App source build
 

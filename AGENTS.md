@@ -1,35 +1,46 @@
 # HAHAPent project instructions
 
 ## Current scope
+
 Tasks 001 and 002 are complete; their historical Manager 0.1.1 acceptance
 evidence is in `tasks/002-suite-manager.md`. The Task 003 continuation has
 installed Manager 0.1.2 on protected test-dev and verified catalog refresh/cache
-persistence. Current acceptance evidence is in `tasks/003-led-integration.md`. Task 002's deployment/Core restart authorization
-was specific to that completed device-free lifecycle. Future deployment,
+persistence. Aquarius Plant LED 0.2.0 is published, installed and configured
+through Manager. Actual native HA A–F controls, explicit Manual/Automatic,
+bounded restoration, code lifecycle and identity preservation passed. All seven
+native control checks ran with Manager stopped and detached HA-side workers
+completed after the launching SSH sessions ended. Configured Core startup with
+Manager stopped also passed. Final health/dashboard/CI verification is tracked
+in `tasks/003-led-integration.md`; do not repeat completed control tests merely
+to reconstruct earlier chat context. Task 002's deployment/Core restart
+authorization was specific to that completed device-free lifecycle. Future deployment,
 integration or Core restart work must follow the current user's authorization
 and the runbook; do not infer a blanket operational grant from prior tests.
 Task 003 continuation authorizes targeted Manager catalog fixes, App builds,
 updates/restarts, module publication/deployment/native configuration, and
 necessary test-dev Core restarts after the runbook backup/startup/KNX gate.
-Finish with a working Aquarius Plant LED installation, configured and available
-for owner verification. The former no-rebuild restriction does not apply to
+Keep the working Aquarius Plant LED installation configured and available for
+owner verification. The former no-rebuild restriction does not apply to
 these targeted changes. Preserve the immutable read-only release and historical
 failed-test report.
-Before renewed lamp writes, repair the failed recovery path, pass offline
-exception/cancellation/connection-loss tests, and document independent code review.
+The recovery and observer-handoff repairs passed offline tests and independent
+review before renewed controls; historical failures remain in the task report.
+Any further authorized bounded testing must retain those reviewed safeguards.
 Use a self-contained HA-side transaction with monotonic deadlines and cleanup
 independent of the development connection. Initial excursions change one channel
 by at most five percentage points for at most ten seconds, including deliberate
 restoration of channels and original mode, with an early measured recovery margin.
-Use a private validation-only target profile until all six channels and explicit
-Manual/Automatic behavior pass fresh hardware readback. A failed experiment
+Only the verified controller/version/six-channel profile is enabled in 0.2.0.
+Other profiles and Shutdown/unknown starting modes remain read-only; optical
+colour mapping and software off remain unsupported. A failed experiment
 pauses further writes for recovery and repair, while safe investigation and
 other authorized implementation work continue. Do not repeat a live experiment
 while restoration is unconfirmed or overwrite competing changes blindly.
 No setup, startup, polling, reconnect or reload path may write lamp state.
 Private target configuration, raw captures and supplied evidence stay outside Git.
-After lifecycle tests, reinstall/configure the final working version and verify
-operation with Manager and the development connection stopped.
+The final working release was reinstalled and configured after lifecycle tests;
+retain it for owner verification. Do not infer new operational authorization
+from this completed validation evidence.
 Do not regenerate credentials or repeat bootstrap. License selection is pending.
 
 ## Credentials and privacy

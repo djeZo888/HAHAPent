@@ -206,8 +206,10 @@ class HAAdapterSimulationTests(unittest.TestCase):
 class FakeHA:
     """Real HTTP socket with synthetic service effects and no secret-bearing logs."""
 
-    def __init__(self, lamp):
+    def __init__(self, lamp, *, tcp_actuation=False):
         self.lamp = lamp
+        self.tcp_actuation = tcp_actuation
+        self.actuator_errors = []
         self.requests = []
         self.status = 200
         self.delay = 0
@@ -237,19 +239,19 @@ class FakeHA:
                     )
                     if service.delay:
                         time.sleep(service.delay)
-                    if service.status == 200:
-                        with service.lamp.lock:
-                            if path == "/api/services/number/set_value":
-                                channels = list(service.lamp.state["channels"])
-                                channels[0] = payload["value"]
-                                service.lamp.state.update(channels=tuple(channels), mode=1)
-                            elif path == "/api/services/select/select_option":
-                                service.lamp.state["mode"] = (
-                                    1 if payload["option"] == "manual" else 0
-                                )
+                    status = service.status
+                    if status == 200:
+                        if service.tcp_actuation:
+                            try:
+                                service.actuate_tcp(path, payload)
+                            except (base.ValidationError, OSError, EOFError) as error:
+                                service.actuator_errors.append(type(error).__name__)
+                                status = 500
+                        else:
+                            service.actuate_state(path, payload)
                         service.effect_finished.set()
                     response = (
-                        f"HTTP/1.1 {service.status} Synthetic\r\n"
+                        f"HTTP/1.1 {status} Synthetic\r\n"
                         "Location: http://example.invalid/never-follow\r\n"
                         "Content-Length: 32\r\nConnection: close\r\n\r\n"
                         "synthetic-sensitive-error-body"
@@ -265,6 +267,34 @@ class FakeHA:
         self.server = Server(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
 
+    def actuate_state(self, path, payload):
+        with self.lamp.lock:
+            if path == "/api/services/number/set_value":
+                channels = list(self.lamp.state["channels"])
+                channels[0] = payload["value"]
+                self.lamp.state.update(channels=tuple(channels), mode=1)
+            elif path == "/api/services/select/select_option":
+                self.lamp.state["mode"] = 1 if payload["option"] == "manual" else 0
+
+    def actuate_tcp(self, path, payload):
+        """Synthetic HA handler uses its own real TCP client and queried readback."""
+        worker = base.ValidationWorker(self.config().device)
+        deadline = time.monotonic() + 2.5
+        try:
+            before = worker._read(deadline, fresh=True)
+            if path == "/api/services/number/set_value":
+                channels = list(before.channels)
+                channels[0] = payload["value"]
+                channels, mode = tuple(channels), 1
+            else:
+                channels = None
+                mode = 1 if payload["option"] == "manual" else 0
+            after = worker._command(channels, mode, deadline, "synthetic_ha")
+            if after.mode != mode or (channels is not None and after.channels != channels):
+                raise base.UnsafeState("synthetic HA actuator readback mismatch")
+        finally:
+            worker._close()
+
     def __enter__(self):
         self.thread.start()
         return self
@@ -279,6 +309,90 @@ class FakeHA:
         data["device"]["port"] = self.lamp.port
         data["ha"]["origin"] = f"http://127.0.0.1:{self.server.server_address[1]}"
         return ha.Configuration.parse(data, simulation=True)
+
+
+class ExclusiveLoopbackDevice(LoopbackDevice):
+    """Only one TCP handler may process frames until its current client closes."""
+
+    def __init__(self):
+        super().__init__()
+        self.owner = threading.Lock()
+        self.rejected_connections = 0
+        handler = self.server.RequestHandlerClass
+        device = self
+
+        class ExclusiveHandler(handler):
+            def handle(self):
+                # Permit EOF handling on a just-closed connection to finish;
+                # a retained observer instead makes the second client fail.
+                if not device.owner.acquire(timeout=0.3):
+                    with device.lock:
+                        device.rejected_connections += 1
+                    return
+                try:
+                    super().handle()
+                finally:
+                    device.owner.release()
+
+        self.server.RequestHandlerClass = ExclusiveHandler
+
+
+class ExclusiveHAHandoffTests(unittest.TestCase):
+    def test_number_releases_observer_before_native_http_tcp_actuation(self):
+        with ExclusiveLoopbackDevice() as lamp, FakeHA(lamp, tcp_actuation=True) as service:
+            result = ha.HAValidationWorker(service.config(), TOKEN).run()
+        self.assertEqual(result["status"], "PASS", result)
+        self.assertEqual(result["ha_completion"], "HTTP_COMPLETED")
+        self.assertEqual(service.actuator_errors, [])
+        self.assertEqual(lamp.rejected_connections, 0)
+        self.assertEqual(lamp.state, {"mode": 0, "channels": (10, 20, 30, 40, 50, 60)})
+        writes = [command for command in lamp.observed if command[2] == 0xFA]
+        self.assertEqual(
+            writes,
+            [
+                base.channel_frame((9, 20, 30, 40, 50, 60), service.config().device.controller),
+                base.mode_frame(1),
+                base.channel_frame((10, 20, 30, 40, 50, 60), service.config().device.controller),
+                base.mode_frame(1),
+                base.mode_frame(0),
+            ],
+        )
+        self.assertLess(result["excursion_seconds"], 10)
+
+    def test_manual_and_automatic_cleanup_each_release_tcp_observer(self):
+        with ExclusiveLoopbackDevice() as lamp, FakeHA(lamp, tcp_actuation=True) as service:
+            result = ha.HAValidationWorker(service.config("manual"), TOKEN).run()
+        self.assertEqual(result["status"], "PASS", result)
+        self.assertEqual(result["ha_completion"], "HTTP_COMPLETED")
+        self.assertEqual(service.actuator_errors, [])
+        self.assertEqual(lamp.rejected_connections, 0)
+        self.assertEqual(
+            [request[2]["option"] for request in service.requests], ["manual", "automatic_program"]
+        )
+        self.assertEqual(
+            [command for command in lamp.observed if command[2] == 0xFA],
+            [base.mode_frame(1), base.mode_frame(0)],
+        )
+        self.assertEqual(lamp.state, {"mode": 0, "channels": (10, 20, 30, 40, 50, 60)})
+        self.assertLess(result["excursion_seconds"], 10)
+
+    def test_retained_read_only_client_blocks_other_tcp_actuator_without_mutation(self):
+        with ExclusiveLoopbackDevice() as lamp, FakeHA(lamp, tcp_actuation=True) as service:
+            config = service.config()
+            observer = base.WireSession(config.device, time.monotonic() + 1)
+            try:
+                before = observer.read_state(time.monotonic() + 1)
+                with self.assertRaises(ha.HACompletionUnknown):
+                    ha.HAService(config, TOKEN).call("channel", 9, time.monotonic() + 1)
+                self.assertEqual(observer.read_state(time.monotonic() + 1), before)
+            finally:
+                observer.close()
+        self.assertEqual(lamp.rejected_connections, 1)
+        self.assertEqual(len(service.actuator_errors), 1)
+        self.assertIn(service.actuator_errors[0], ("EOFError", "ConnectionResetError"))
+        self.assertTrue(
+            all(command in (base.SYSTEM_QUERY, base.CHANNEL_QUERY) for command in lamp.observed)
+        )
 
 
 class NativeHATransportTests(unittest.TestCase):

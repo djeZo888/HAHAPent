@@ -1,6 +1,7 @@
 # Task 003 — Aquarius Plant LED
 
-Status: **IN PROGRESS — authorized continuation to working installed controls**.
+Status: **COMPLETE — Manager 0.1.2 and Aquarius Plant LED 0.2.0 installed,
+configured and available for owner verification; all required native controls PASS**.
 This task follows the owner's revision-2 assignment;
 the original package, device configuration and packet evidence are private.
 
@@ -154,8 +155,9 @@ and original Automatic mode at **2.653862 seconds**; total reported excursion wa
 while the detached HA-side worker owned cleanup. Two subsequent read-only checks
 confirmed Automatic. Together with the earlier A–E passes, all six channels now
 have successful bounded direct-TCP change/readback/restoration evidence.
-This establishes no optical colour mapping and does not replace native HA
-Number/Select service validation, which remains pending.
+This establishes no optical colour mapping. Native HA Number/Select service
+validation was still pending at this checkpoint; its later actual results are
+recorded below.
 
 The interim 0.1.1 module source adds response-backed write-connection lifetime,
 strict echo quarantine, fresh-socket confirmation, current Automatic vector
@@ -196,13 +198,129 @@ without an App rebuild. Updating the installed module from 0.1.0 to 0.1.1 throug
 Manager passed, followed by the gated Core restart and health checks. Actual
 native HA UI configuration reached `create_entry`; the installed entry exposes
 six numeric A–F Number entities with range 0–100 and a Select reporting Automatic.
-Diagnostic acceptance, rollback/removal and final reinstallation remain pending.
-The empty write allowlist makes these read-only installation results.
+The subsequent read-only rollback preserved native device/entity identity.
+Native entry deletion and Manager code removal also passed. The empty write
+allowlist makes these read-only lifecycle results. Final 0.2.0 installation and
+the first native control attempt are recorded below.
 
-Source 0.2.0 is being prepared for validated controls. Actual native HA control
-tests, Manager/development-connection independence and the final owner-ready
-installation remain pending. Publishing or loading a write-enabled profile alone
-will not satisfy those acceptance checks.
+## Module 0.2.0 publication and installed checkpoint
+
+The immutable
+[0.2.0 release](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0)
+was published with three verified assets: native ZIP, catalog snapshot and
+SHA256SUMS. ZIP SHA-256 is
+`9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382`.
+PR #9 merged as `0f94c1c329c48b6641ac7d49204fa41a7e4bf796`;
+[CI run 34291947584](https://github.com/djeZo888/HAHAPent/actions/runs/34291947584)
+and [CI run 34291923648](https://github.com/djeZo888/HAHAPent/actions/runs/34291923648)
+completed successfully. These publication and CI checks do not establish actual
+native HA control acceptance.
+
+Actual Manager 0.1.2 Ingress Refresh discovered 0.2.0 without another App rebuild,
+and the real UI installation reached **Complete**. The gated Core restart
+returned healthy HA 2026.9.1 with KNX unchanged. Native HA configuration reached
+`create_entry`, producing one device, six Number entities and one Select. The
+coordinator verified the entry/entity mapping to the exact protected target;
+all installed Python files and the manifest matched the published source bytes.
+The profile is write-enabled in this version, but that fact alone is not a
+successful control test.
+
+Manager was stopped for the independence test phase. Configured startup
+availability with Manager off has separately **PASS** evidence: a subsequent
+gated Core restart left HA
+2026.9.1 running, the 0.2.0 entry loaded, six Numbers and the Select available,
+and KNX loaded/connected with unchanged project and startup baselines. The exact
+protected target and all installed Python/manifest bytes were checked again.
+Two fresh post-startup TCP reads confirmed Automatic. This proves configured
+startup and availability without Manager. Actual control evidence is separate:
+the first attempt failed as described next, followed by repair and seven passes.
+
+## Native HA A01 failure and read-only diagnosis
+
+The first native HA channel test, **A01, is FAIL**. Its HTTP operation reached
+unknown completion at **3.001782 seconds**. A fresh independent guard confirmed
+the exact original channel vector and Automatic mode at **3.598169 seconds**.
+The worker ended with an honest FAIL at **3.598303 seconds** because the HA
+action's completion was unknown. Observing original output does not prove that
+the HA action succeeded, was ignored or was cancelled. No PASS is claimed for
+A01. Two subsequent fresh read-only checks confirmed Automatic; private
+HA logs recorded admitted-action deadline errors.
+
+Read-only diagnosis then tested connection contention. The first connection
+successfully read Automatic state. With that connection still open, a second
+connection timed out after **0.803462 seconds**. After releasing the first
+connection, a fresh full read passed in **0.425227 seconds**, matching the exact
+unchanged baseline and Automatic mode. The HA-service adapter had retained its
+baseline TCP connection while invoking HA, preventing the HA client's independent
+connection from completing under these observed conditions.
+
+Further control experiments were paused. The adapter was repaired to release
+its baseline connection before invoking the HA actuator, including mode cleanup.
+Exclusive-connection simulation coverage and renewed independent review preceded
+another live test. This was an adapter connection-lifetime defect, not evidence that the
+direct-TCP channel protocol is incompatible. No larger test allowance, automatic
+write retry or relaxation of unknown-completion handling is authorized.
+
+## Final adapter gate and actual native HA controls
+
+The [superseding adapter review](../docs/aquarius-validation-review.md#ha-observer-handoff-repair-review)
+passed **22 adapter tests in 18.913 seconds**, independently, with Ruff PASS.
+The combined base/adapter suite passed **65 tests in 60.676 seconds**. Three added
+regressions model an exclusive TCP connection and require the observer to close
+before a separate service actuator connects. The unchanged base worker retains
+its bounded fresh-read recovery; no integration runtime change was required.
+The reviewed adapter SHA-256 is
+`7669e3c363cd1c9a38b39cd54d3dd89c3047a787a10e27c585e72a4bd686045b`;
+its test SHA-256 is
+`358356dc9f64e4177014e4efc2b357bee9f446d566ea0ef10d0163c934d0d685`.
+The earlier assembled release-source checkpoint passed **343 unit tests** and
+**56 native HA framework tests**. These remain synthetic results.
+
+Worker-fix commit `0b2db56637f6ceab8cd74d0a2c213cdb93d0f065` was pushed;
+[CI run 34292965170](https://github.com/djeZo888/HAHAPent/actions/runs/34292965170)
+failed only the platform-specific EOF/reset assertion. The final checkpoint
+below records its narrow repair; the earlier release-source and PR #9 CI passes
+remain separate evidence.
+
+Installed and configured module **0.2.0** then passed all seven actual native HA
+tests below. **Manager 0.1.2 remained stopped throughout.** Launching SSH sessions
+returned in **0.149–0.179 seconds**, before the detached HA-side workers completed
+the controls and their guarded cleanup.
+
+| Actual native HA test | Control and independent readback | Original state / Automatic confirmed | Total excursion |
+| --- | --- | --- | ---: |
+| Channel A02 | PASS | PASS | 3.298624 s |
+| Channel B01 | PASS | PASS | 3.473584 s |
+| Channel C01 | PASS | PASS | 3.526991 s |
+| Channel D01 | PASS | PASS | 3.587826 s |
+| Channel E01 | PASS | PASS | 4.462599 s |
+| Channel F01, native | PASS | PASS | 3.520784 s |
+| Explicit Manual → Automatic through HA Select | PASS | PASS | 3.086147 s |
+
+Each channel request recorded **HTTP_COMPLETED** and a fresh independent TCP
+read of the exact one-percentage-point change, with all five other channels
+preserved and Manual confirmed. The worker deliberately restored and confirmed
+the original channels and Automatic within ten seconds. The separate Select test
+confirmed both explicit Manual and Automatic through actual HA services. Two
+subsequent fresh read-only checks confirmed Automatic after every test.
+
+Channel E also exercised a real recovery fault: its channel-restoration read
+timed out after 0.8 seconds, then one fresh read-only retry confirmed recovery.
+No write was repeated. Its complete 4.462599-second excursion remained within
+the original bound. This is actual fault-path evidence, separate from simulation.
+
+Together, these results demonstrate actual installed Number/Select operation
+with Manager stopped and without an attached development SSH session owning
+cleanup. The configured Core-startup test with Manager stopped also passed.
+Literal physical power-off of the development computer was not performed.
+The earlier native A01 unknown-completion FAIL, direct F01 failed recovery and
+original first-test incident remain failures; none is overwritten by these passes.
+
+Functional control acceptance, final post-test health and dashboard handoff
+are **PASS**. The final task-branch head must pass its GitHub checks before
+completion is merged into main. Optical colour naming/calibration is **NOT_TESTED**; software
+off and program uploads are unsupported and were not exercised. No other-device
+control, production access, network/security change or KNX modification occurred.
 
 ## Historical revision-2 baseline and authorization
 
@@ -357,7 +475,7 @@ six readable percentages and Automatic mode. The broken historical 0.1.0
 new-entry form was not used or counted as passing. Manager refused removal
 while the native HA entry existed. Native HA's entry menu then deleted only
 the Aquarius entry, and Manager completed package removal. Final working
-installation is recorded separately when complete. These lifecycle operations used only the
+installation and acceptance are recorded above. These lifecycle operations used only the
 read-only releases and issued no lamp control commands.
 
 ## Working control source and immutable publication
@@ -373,7 +491,7 @@ amd64 App image/runtime checks. No private credentials were used by CI.
 
 The deterministic 0.2.0 ZIP SHA-256 is
 `9658f034c69fc3cbb5743759920d4f91e4a6429491ed286ee158e4f6e8562382`.
-Publication and deployment results follow after verification. A second fresh
+Publication and actual deployment verification passed. A second fresh
 pre-deployment encrypted backup was downloaded privately (46,254,080 bytes),
 and isolated decryption and selected-content readability passed using the
 existing retained recovery key. No live restore was performed.
@@ -382,5 +500,40 @@ existing retained recovery key. No live restore was performed.
 was published as an immutable control candidate with ZIP, catalog snapshot and
 checksums. All three unauthenticated public downloads matched their local bytes;
 Manager's real archive validator accepted the ZIP and provenance. Artifact
-content and release notes passed secret/private-target scanning. Final native
-HA acceptance remains a separate gate before promoting its status.
+content and release notes passed secret/private-target scanning. Following final native
+HA acceptance, its release status was promoted without changing the tag or assets.
+
+The HA-adapter handoff repair subsequently passed independent source review and
+**22 adapter tests** (18.913 seconds independently), plus **65 combined worker
+and adapter tests** (60.676 seconds by the coordinator). The new adapter closes
+its observer connection before each native HA delegation, including Automatic
+cleanup; the original deadline, fresh readback and uncertain-completion failure
+rules remain intact. The exclusive-connection regression failed on the previous
+implementation and passes after the repair. See the superseding frozen hashes
+in [the review](../docs/aquarius-validation-review.md). The installed module and
+its immutable ZIP are unchanged by this operator-tool repair.
+
+## Final installed state and checkpoint
+
+**PASS (actual):** Manager 0.1.2 is running again, module 0.2.0 remains installed
+and configured, all six native channel controls are available, and the lamp is
+in Automatic-program mode. Core 2026.9.1 is running; KNX is connected with its
+project and startup configuration unchanged. A new dedicated lamp dashboard
+renders six channel controls and the operating-mode selector with no unavailable
+entities. Existing dashboards were preserved. Private owner handoff contains the
+actual dashboard/device locations and entity IDs; none belong in public Git.
+
+The 0.2.0 release was promoted after actual acceptance. Its original tag, ZIP and
+all three assets remain unchanged; the canonical catalog points to the current
+usage guide and records validated native acceptance. Historical read-only
+releases remain immutable. No later cleanup removes or disables the working
+integration.
+
+Worker-fix CI 34292965170 ran 346 Linux tests and failed only a portability
+assertion expecting a connection reset where Linux returned EOF. The final
+regression accepts exactly those two terminal-close outcomes while retaining
+its blocked-connection, unchanged-state and no-write checks. Three affected
+local tests and independent coordinator review passed; both executable workers
+are unchanged. Final publication/merge requires completed successful GitHub
+checks for the final task-branch head. The earlier failed CI run is retained,
+not relabeled as a pass.

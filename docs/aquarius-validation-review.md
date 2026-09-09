@@ -228,6 +228,8 @@ Six-channel acceptance still requires the missing actual bounded F result.
 
 ### HA-service adapter review and conditional gate
 
+Historical gate: superseded by the observer-handoff repair review below.
+
 The adapter is also independently reviewed at the hashes above. It selects only
 one configured Aquarius Number or the configured Manual/Automatic Select at one
 explicit private HA origin. It does not follow redirects or log response bodies;
@@ -276,3 +278,74 @@ translated name while preserving its existing unique ID. Independent source
 review found no blocking issue. Local validation: **343 unit tests PASS in
 104.272 seconds; 56 native HA tests PASS**. These are synthetic results;
 actual native HA service acceptance is recorded separately in Task 003.
+
+## HA observer handoff repair review
+
+**PASS — superseding independent adapter gate, 2026-09-09.** This gate covers
+the hashes below. It permits renewed bounded native HA testing after the
+existing target/entry and stable-baseline checks; it does not constitute actual
+HA service acceptance.
+
+| File | SHA-256 |
+| --- | --- |
+| `tooling/aquarius_ha_validation.py` | `7669e3c363cd1c9a38b39cd54d3dd89c3047a787a10e27c585e72a4bd686045b` |
+| `tests/test_aquarius_ha_validation.py` | `358356dc9f64e4177014e4efc2b357bee9f446d566ea0ef10d0163c934d0d685` |
+| Unchanged `tooling/aquarius_validation.py` | `1fbbb2db16a19b7b7478b699903d95bd725710d308a9c37c5114666f0ce38300` |
+
+The earlier native A01 attempt remains **FAIL**. HTTP completion was unknown
+at 3.001782 seconds; the original channel vector and Automatic mode were observed
+at 3.598169 seconds. That observation neither confirms the intended experiment
+nor proves cancellation of an admitted HA task.
+
+The coordinator then performed actual read-only investigation: one open lamp
+connection successfully read Automatic state; a second connection while the
+first remained open timed out after 0.803462 seconds. Closing the first allowed
+a fresh full read in 0.425227 seconds with the exact unchanged baseline. These
+observations support releasing the observer before HA needs its own connection.
+
+Independent source review confirms that `_ha_call` now closes its owned TCP
+observer before every HA delegation, including Automatic-mode cleanup. The
+remaining time and command margin are checked after releasing the socket.
+Fresh baseline guards, the ten-second excursion bound, guarded independent TCP
+recovery, and UNKNOWN/no-retry semantics are unchanged. Closing this read-only
+observer cannot itself change lamp output. The integration and base worker
+source are unchanged by this adapter repair.
+
+```sh
+.venv/bin/python -B -m unittest tests.test_aquarius_ha_validation -q
+.venv/bin/ruff check tooling/aquarius_ha_validation.py tests/test_aquarius_ha_validation.py
+```
+
+Independent result: **22 tests PASS in 18.913 seconds; Ruff PASS**. All three
+hashes were checked before and after this run. The coordinator separately
+reported **65 combined base/adapter tests PASS in 60.676 seconds**.
+
+The three added regressions use a synthetic lamp that permits one active TCP
+handler and an HTTP handler that actuates through its own real TCP session.
+They verify Number control with TCP restoration, Manual with HA Automatic
+restoration, and rejection of a second client while a read-only observer is
+deliberately retained. Positive cases confirm the exact expected command
+sequence, no rejected connections, HTTP completion, original state, and a
+sub-ten-second excursion. The implementation agent also demonstrated that
+both positive cases fail against the earlier adapter before applying the fix.
+
+This fixture models exclusive connection ownership, not the lamp's exact
+timeout: its blocked socket closes after 0.3 seconds. Its service actuator uses
+the base TCP worker, not the actual HA integration framework. These remain
+synthetic tests. The next actual native test must record its own HTTP and TCP
+evidence, stop on the first failure, and preserve the earlier A01 failure.
+
+### Cross-platform test assertion correction
+
+The worker-fix CI ran 346 tests on Linux and exposed one test-only portability
+assumption: the exclusive-client fixture's terminal close raised `EOFError`
+instead of macOS's `ConnectionResetError`. The assertion now requires exactly
+one of these two terminal-close results. It still requires one blocked
+connection, an identical observed state, and query-only frames without mutation.
+The coordinator independently reviewed this narrow diff; all three affected
+exclusive-client tests passed locally. Neither executable worker changed, so
+this does not change the actual lamp validation procedure or its approval.
+
+Final test-file SHA-256:
+`7cfebf148d53c79bdbfc9717a4197d36d08d130e89ac973f09c964a68c4d3acd`.
+The earlier frozen test hashes document their historical review checkpoints.

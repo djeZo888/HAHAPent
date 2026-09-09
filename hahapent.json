@@ -86,7 +86,7 @@
       "id": "aquarius-plant-led",
       "name": "Aquarius Plant LED",
       "description": "Six percentage controls and Manual/Automatic-program selection for the validated six-channel controller profile. Unknown profiles remain read-only; setup and background operations never write. See task evidence for actual acceptance.",
-      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.2.0/modules/aquarius_plant_led/README.md",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/main/modules/aquarius_plant_led/README.md",
       "integration_domain": "aquarius_plant_led",
       "version": "0.2.0",
       "minimum_manager_version": "0.1.2",
@@ -114,9 +114,9 @@
         "manager": "not_required"
       },
       "extensions": {
-        "release_status": "control-candidate",
-        "hardware_controls": "six_channels_validated",
-        "live_ha_acceptance": "pending"
+        "release_status": "validated",
+        "hardware_controls": "six_channels_and_modes_validated",
+        "live_ha_acceptance": "pass"
       }
     }
   ],
