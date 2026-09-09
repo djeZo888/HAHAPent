@@ -659,6 +659,104 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             client.AquariusClient("")
 
+    async def test_power_profile_gate_is_separate_from_manual_control(self):
+        await self.client.refresh()
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.client.turn_off()
+        self.lamp.mode = 8
+        await self.client.refresh()
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.client.turn_on()
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_exact_validated_profile_is_the_only_shipped_power_admission(self):
+        self.assertEqual(protocol.VERIFIED_SHUTDOWN_PROFILES, {((28, 30), (26, 29), 6)})
+        self.profiles.stop()
+        self.lamp.controller, self.lamp.version = (28, 30), (26, 29)
+        state = await self.client.refresh()
+        self.assertTrue(state.system.power_supported)
+        self.assertEqual(self.lamp.writes, [])
+        self.lamp.version = (26, 30)
+        state = await self.client.refresh()
+        self.assertFalse(state.system.power_supported)
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.client.turn_off()
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_explicit_power_off_and_saved_manual_mix_round_trip(self):
+        self.lamp.controller = (0x14, 0x32)
+        self.lamp.channel_operation = 0xFA
+        original = self.lamp.channels
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            observed = await self.client.refresh()
+            off = await self.client.turn_off(expected_state=observed)
+            self.assertEqual(off.system.mode_raw, 8)
+            restored = await self.client.turn_on(original, expected_state=off)
+        self.assertEqual(restored.channels, original)
+        self.assertEqual(restored.system.mode_raw, 1)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(8), protocol.mode_frame(1)])
+
+    async def test_explicit_power_zero_reply_and_automatic_restore_never_sends_channels(self):
+        self.lamp.mode = 0
+        self.lamp.channel_operation = 0xFA
+
+        def zero_off(frame, response):
+            if frame == protocol.mode_frame(8):
+                self.lamp.channels = (0,) * 6
+            return response
+
+        self.lamp.response_override = zero_off
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            off = await self.client.turn_off()
+            self.assertEqual(off.channels, (0,) * 6)
+            on = await self.client.turn_on(expected_state=off)
+        self.assertEqual(on.system.mode_raw, 0)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(8), protocol.mode_frame(0)])
+
+    async def test_power_readback_changed_profile_fails_without_retry(self):
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+
+            async def interfere(connection, frame):
+                if connection == 3 and frame == protocol.SYSTEM_QUERY:
+                    self.lamp.version = (2, 6)
+
+            self.lamp.hook = interfere
+            with self.assertRaises(client.ConflictError):
+                await self.client.turn_off()
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(8)])
+        self.assertIsNone(self.client.last_state)
+
+    async def test_off_unexpected_mixed_vector_is_not_treated_as_safe_shutdown(self):
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+
+            def mixed_off(frame, response):
+                if frame == protocol.mode_frame(8):
+                    self.lamp.channels = (0, 20, 30, 40, 50, 60)
+                return response
+
+            self.lamp.response_override = mixed_off
+            with self.assertRaises(client.ConflictError):
+                await self.client.turn_off()
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(8)])
+
+    async def test_manual_power_restore_rejects_invalid_or_zero_mix_before_io(self):
+        for channels in ((0,) * 6, (1,) * 5, (101,) * 6, (True,) * 6, (1.0,) * 6):
+            with self.subTest(channels=channels), self.assertRaises(protocol.ProtocolError):
+                await self.client.turn_on(channels)
+        self.assertEqual(self.lamp.connections, 0)
+
+    async def test_off_state_requires_fresh_exact_vector_before_manual_restore(self):
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            self.lamp.mode = 8
+            observed = await self.client.refresh()
+            self.lamp.channels = (11, 20, 30, 40, 50, 60)
+            with self.assertRaises(client.ConflictError):
+                await self.client.turn_on(observed.channels, expected_state=observed)
+        self.assertEqual(self.lamp.writes, [])
+
 
 if __name__ == "__main__":
     unittest.main()

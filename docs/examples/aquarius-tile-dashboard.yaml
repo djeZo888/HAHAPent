@@ -1,0 +1,185 @@
+# Generic example only: replace every aquarius_example entity with your existing ID.
+# Colour names come from per-lamp integration options; no A-F colour mapping is assumed.
+# Tile schema verified against frontend 20260826.6 used by HA 2026.9.1:
+# https://github.com/home-assistant/frontend/blob/20260826.6/src/panels/lovelace/cards/hui-tile-card.ts
+# https://github.com/home-assistant/frontend/blob/20260826.6/src/panels/lovelace/card-features/hui-numeric-input-card-feature.ts
+# https://github.com/home-assistant/frontend/blob/20260826.6/src/panels/lovelace/card-features/hui-toggle-card-feature.ts
+# Numeric slider min/max/step/unit come from the Number entity (0/100/1/%).
+# Labels/options do not rename existing entity IDs; keep those IDs in the dashboard.
+# History is optional and uses existing Recorder data only. Remove the history-graph
+# card if no history is wanted. If history is empty, review your own Recorder
+# inclusion/exclusion settings; this example never changes Recorder or retention.
+# Apply this to a dedicated dashboard; preserve existing dashboards.
+title: Aquarium
+views:
+- title: Aquarium
+  path: aquarium
+  cards:
+  - type: grid
+    columns: 1
+    square: false
+    cards:
+    - type: tile
+      entity: light.aquarius_example_lamp
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: toggle
+    - type: tile
+      entity: sensor.aquarius_example_mode_status
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+    - type: tile
+      entity: button.aquarius_example_resume_schedule
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      hide_state: true
+      features:
+      - type: button
+        action_name: Resume schedule
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: tile
+      entity: number.aquarius_example_channel_a
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: number.aquarius_example_channel_b
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: number.aquarius_example_channel_c
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: number.aquarius_example_channel_d
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: number.aquarius_example_channel_e
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: number.aquarius_example_channel_f
+      tap_action:
+        action: none
+      icon_tap_action:
+        action: more-info
+      hold_action:
+        action: more-info
+      icon_hold_action:
+        action: more-info
+      double_tap_action:
+        action: none
+      icon_double_tap_action:
+        action: none
+      features:
+      - type: numeric-input
+        style: slider
+  - type: history-graph
+    title: Channel history
+    hours_to_show: 24
+    entities:
+    - number.aquarius_example_channel_a
+    - number.aquarius_example_channel_b
+    - number.aquarius_example_channel_c
+    - number.aquarius_example_channel_d
+    - number.aquarius_example_channel_e
+    - number.aquarius_example_channel_f

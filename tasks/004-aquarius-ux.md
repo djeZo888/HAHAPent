@@ -50,7 +50,9 @@ no full-brightness vector is invented. Startup and background paths never write.
 | Native computer/iPhone surface discovery | BLOCKED currently | Computer Use reports the Mac locked; unlock requested while safe work continues |
 | Private camera read-only access | PASS | Guest-scoped stream decoded; multiple frames show the LED board; no camera settings changed |
 | Optical colour mapping | NOT_TESTED | Bounded worker under offline review; no colour labels guessed |
-| Shutdown hardware behavior | NOT_TESTED | New bounded worker/recovery design under offline review |
+| Direct Manual-origin software Shutdown | PASS | Mode 8 readback all-zero; Manual-first guarded saved-vector restoration and three later reads match original state; 2.746025 s |
+| Camera software-Off observation | PASS | Multiple private frames show darkness and restored lighting; no camera settings changed |
+| Native HA power and Automatic-origin return | NOT_TESTED | Runtime/HA adapter acceptance remains pending |
 
 The initial Task 004 checkpoint `beda55630fbcf743a26affccb73838cf15d15902`
 was pushed and [CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34338192756).
@@ -61,3 +63,29 @@ available entities. Actual read-only samples show stable Manual output, which
 is preserved; they do not establish Automatic interpolation. The camera viewing
 path now works through guest-scoped MQTT/WebRTC streaming with TLS verification.
 No camera configuration was changed.
+
+## Actual direct Shutdown evidence
+
+The reviewed direct-worker checkpoint `072670dd49127628344caf5467ba6730474d0767`
+was pushed and [CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34339505146).
+The first launch was rejected during setup because the private report path was
+relative. No worker transaction or lamp command began. The coordinator corrected
+the launcher to use absolute paths and passed an HA-side configuration/report
+check with zero lamp network operations; reviewed worker bytes were unchanged.
+
+The following Manual-origin test passed its experiment and recovery in
+**2.746025 seconds**. The lamp reported Shutdown with all six exposed channels
+zero. Manual alone still reported zero, so the worker used the independently
+reviewed fresh-zero guard and one deliberate original-vector-plus-Manual restore.
+The final exact Manual mode/vector matched the baseline. Three later independent
+read-only samples confirmed the same state. Multiple camera frames showed actual
+darkness and return of the prior lighting. This is actual device/optical evidence,
+separate from offline tests, and admits only the exact validated raw power profile.
+Automatic-origin power, versioned HA memory and native service acceptance remain
+pending. Current lamp percentages and all captures remain private.
+
+The existing native entry was temporarily disabled through HA during direct TCP
+experiments to release its polling connection. Its identity/configuration were
+preserved; the final installation must be re-enabled and configured. No Core
+restart, other integration change or network/security change was needed for this
+pause. The earlier detached read-only observer completed before testing.

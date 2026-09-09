@@ -1,144 +1,148 @@
 # Aquarius Plant LED
 
-**Version 0.2.0** provides six independent **Channel A–F** percentage controls
-and explicit **Manual / Automatic program** selection for the validated Aqua
-Medic Aquarius Plant Plus 60 controller profile. Other profiles remain read-only.
-Each channel uses integer steps from `0–100%`; letters describe protocol order,
-not verified colours or wavelengths.
+Aquarius Plant LED provides local control of the lamp through native Home
+Assistant entities. The 0.3.0 UX update adds a main software-power Light, a clear
+mode status, **Resume schedule**, configurable spectral labels and native Tile
+sliders. Six independent intensity controls remain available; there is no RGB
+wheel or invented master-brightness control. See [Task 004](../../tasks/004-aquarius-ux.md)
+for the current release, installation and actual hardware acceptance status.
 
-The local Home Assistant integration uses raw TCP and needs no cloud account,
-MQTT, Manager process or developer computer at runtime. Version 0.2.0 is installed
-and configured through Manager 0.1.2 on test-dev. All six actual HA Number
-controls and explicit Manual/Automatic selection passed bounded checks with
-independent lamp readback and confirmed restoration. Manager was stopped for
-all seven checks; detached HA-side workers completed after their launching SSH
-sessions ended. Configured Core startup with Manager stopped also passed.
-[Task 003](../../tasks/003-led-integration.md) separates those actual results
-from direct-TCP and synthetic tests and records final verification status.
+## Everyday use
 
-The immutable [0.1.0 read-only candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
-and interim 0.1.1 release remain historical. Two earlier tests exceeded the
-ten-second recovery bound; a later native HA attempt had uncertain completion.
-Successful checks do not erase those failures.
-The [incident record](../../tasks/003-led-integration.md#continuation-live-delivery-and-recovery-evidence)
-and [independent recovery reviews](../../docs/aquarius-validation-review.md)
-preserve the failed outcomes, deliberate recoveries and subsequent repairs.
+- **Following schedule** means the lamp runs its existing stored time-point
+  program. **Resume schedule** returns to that program without editing it.
+- **Manual override** means the six selected percentages are held. Adjusting an
+  intensity slider enters Manual and preserves the other five freshly read
+  channel values. The mode selector remains available under configuration for
+  existing automations; the dashboard uses the clearer status and button.
+- **Lamp Off** requests software Shutdown. It does not switch mains power.
+  Before sending Off, HA saves the observed mode and last nonzero Manual mix.
+  **On** restores that mix when Off originated from Manual, or resumes the
+  existing schedule when Off originated from Following schedule.
+- If saved origin is absent, unconfirmed, incompatible, or no longer matches the
+  observed Off state, explicit **On resumes the stored schedule**. It never
+  invents full-brightness values. A Manual all-zero state can restore its last
+  saved nonzero Manual mix; if none exists, the same schedule fallback applies.
 
-## Installation and setup
+Software power is enabled only for controller profiles that passed separate
+bounded Shutdown/readback validation. Unknown modes are not interpreted as Off.
+An unreachable lamp is unavailable, even if another device has cut mains power.
+This integration never operates a Shelly or another mains switch.
 
-Install **Aquarius Plant LED** from HAHAPent's catalog,
-then follow **Configure in HA** to add the native integration. Enter the lamp's
-already provisioned IP address or hostname and TCP port (default `8080`). The
-connection originates from Home Assistant. Setup sends only system/channel reads.
-Follow the Manager's Core restart indication after changing integration code.
-Back up HA and review startup effects before restarting an existing installation.
+## Installation and update
 
-Manager 0.1.2 adds canonical built-in catalog refresh, retaining validated cached
-metadata across App restarts. Use **Refresh** to discover newly published module
-versions after that Manager update is installed. The older Manager 0.1.1 only
-bundles its built-in catalog, so update it through the supported App-store path
-first. Do not copy integration files over Manager ownership or add the same
-repository as an extra source. The task report records actual installed versions
-and lifecycle results separately from these instructions.
+In HAHAPent Manager 0.1.2 or later, use **Refresh** to discover the published
+module and **Update** for the existing installation. Follow the Core restart
+indication after integration code changes. Back up HA and review startup effects
+before restarting. Existing configuration, A–F entity identities and user-assigned
+names survive the update; no second integration entry is needed.
 
-One device contains six **Channel A–F** sliders, an **Operating mode** selector,
-a **Write support** diagnostic and raw protocol diagnostics. Adjusting a slider
-enters and saves **Manual**, pausing the stored automatic program. Other channels
-are preserved from fresh readback. Choose **Automatic program** to resume the
-existing schedule. This action does not edit that schedule or restore a previous
-manual mix. A controller outside the validated profile remains readable, and
-its controls explain why writes are unavailable.
+For a new installation, select **Install**, then **Configure in HA**. Enter the
+already provisioned lamp target and TCP port (default `8080`). The connection
+originates from HA. Setup sends only system/channel reads; no provisioning,
+network discovery or manufacturer cloud account is required. At runtime the
+integration needs neither Manager nor the developer computer.
 
-Channel letters describe protocol order, not verified colours or wavelengths.
-Rename entities in Home Assistant after identifying them; names do not determine
-their stable IDs. Use the native entry's **Reconfigure** action when the same
-lamp's address changes. Identity is local to the HA config entry, since no verified
-immutable serial number is available. Replacing the lamp at the same address
-cannot be reliably detected from these protocol fields alone.
+Use the native integration's **Reconfigure** action if the same lamp's address
+changes. Identity belongs to the HA config entry because a verified immutable
+serial number is unavailable. Replacing a lamp at the same address with an
+identical raw profile cannot be reliably detected.
 
-## Behavior and limits
+## Colour labels and intensity sliders
 
-- Startup, setup, polling, reload and reconnection only read state. No brightness,
-  mode, schedule, clock or saved state is replayed automatically.
-- Polling starts at 30 seconds and backs off to 5 minutes during failures.
-  Explicit slider changes are debounced. Each action checks the freshly read
-  mode and profile. Changes to Manual output are a conflict;
-  schedule-driven level changes while the same Automatic mode remains active are
-  allowed only for an explicit action, preserving the other five fresh values.
-  The write connection remains open for a queried mode/profile confirmation,
-  followed by a fresh connection for channel readback. An acknowledgement or
-  echoed command cannot confirm the change.
-- Each admitted explicit action has a three-second deadline including debounce
-  and waiting for communication locks. Expiry cancels and settles the client
-  transaction, marks output unavailable and prevents queued work from replaying.
-  This does not bound HTTP service admission or recall bytes already sent to the
-  controller. A fresh read is required before another deliberate action.
-- An unavailable lamp stays unavailable, including when another device cuts mains
-  power. This integration never controls a Shelly or restores mains power.
-- A changed or unconfirmed state stops that action; no write retry loop runs.
-  Wait for a successful read, review the actual state, then make a new deliberate
-  change. Close competing controller apps when commissioning.
-- Only explicitly validated controller/version/count profiles permit writes.
-  Unknown profiles and unknown modes remain diagnostic rather than being treated
-  as off. Controls are available only when the current mode is Manual or
-  Automatic; Shutdown and other starting modes remain read-only even on a
-  validated profile. Raw version bytes are not a manufacturer firmware string.
-- Shutdown/on-off, master brightness, RGB colour wheels, effects, schedule/clock
-  writes, temperature, provisioning, factory reset and firmware updates are not
-  exposed. Six percentage values are not calibrated light-output measurements.
+Open the integration's **Configure** options to set the six per-lamp labels.
+Defaults remain **Channel A–F** until they are identified. Choose daylight white,
+warm white, blue, ruby red, red or green, or enter a distinct short custom label.
+The options are versioned and do not impose one lamp's mapping on other variants.
+The entity's `protocol_channel` attribute always retains its A–F letter.
 
-## Dashboard example
+Label changes preserve `channel_a` through `channel_f` unique IDs and existing
+entity IDs. A name explicitly assigned in Home Assistant's entity registry takes
+precedence; clear that custom name if you want the integration's selected label.
+Each slider uses integer `0–100%` steps. These values are controller settings,
+not calibrated spectral output or wavelength measurements. Ambiguous optical
+colours must stay configurable; they must not be guessed from channel order.
 
-Replace these example entity IDs with those created in your installation:
+## Native dashboard
+
+Use [the complete Tile dashboard example](../../docs/examples/aquarius-tile-dashboard.yaml)
+and replace its generic entity IDs with the existing entities. It uses native
+`numeric-input` slider features, a software-power toggle, mode status and a
+Resume schedule button. Ordinary card taps do nothing. Icon tap or hold opens
+More-info deliberately. Dragging a slider should leave the dashboard in place.
+Actual desktop/mobile interaction results are recorded separately in Task 004;
+a valid YAML example or an emulated viewport alone does not prove iPhone use.
+
+The example's history graph is optional. To stop recording the six channels,
+you may add their existing IDs to your own Recorder exclusions, merging with
+any current Recorder settings:
 
 ```yaml
-type: entities
-title: Aquarium channels
-entities:
-  - entity: select.aquarius_plant_led_operating_mode
-  - entity: number.aquarius_plant_led_channel_a
-  - entity: number.aquarius_plant_led_channel_b
-  - entity: number.aquarius_plant_led_channel_c
-  - entity: number.aquarius_plant_led_channel_d
-  - entity: number.aquarius_plant_led_channel_e
-  - entity: number.aquarius_plant_led_channel_f
+recorder:
+  exclude:
+    entities:
+      - number.aquarius_example_channel_a
+      - number.aquarius_example_channel_b
+      - number.aquarius_example_channel_c
+      - number.aquarius_example_channel_d
+      - number.aquarius_example_channel_e
+      - number.aquarius_example_channel_f
 ```
 
-## Troubleshooting and recovery
+This is optional configuration guidance. The integration and example do not
+change global Recorder settings or retention. Excluded entities will not have
+new Recorder history; remove the history graph if it is unwanted.
 
-For connection failures, check the configured target and the route from HA to its
-TCP port. A successful TCP connection alone does not prove protocol compatibility.
-Do not reprovision a working lamp or enable broadcast discovery. Unsupported data
-must be investigated privately; do not post configuration, addresses or captures.
+## Communication, memory and recovery
 
-For a conflict or unconfirmed change, inspect the current state and other active
-controllers. No automatic restoration is attempted because it could overwrite a
-newer intentional change. Never infer software shutdown from an outage.
+Setup, startup, polling, reload and reconnect only read the lamp. They never
+restore a saved mix or send power, brightness, mode, schedule or clock changes.
+Versioned private HA storage retains power intent and Manual memory across a
+restart. Saving or loading this memory is not a lamp command. Unsupported future
+storage formats remain preserved; Off is blocked when safe persistence cannot
+be verified. On retains the documented conservative schedule fallback.
 
-After installation, confirm that all six channel values are available and the
-Write support diagnostic identifies the validated profile. For an owner check,
-make one small deliberate channel adjustment, verify Manual mode and the other
-five values, restore that channel's previous value, then select Automatic program
-if that was the desired original mode. Use the HA connection and entity names
-already configured; no provisioning or developer-computer connection is required.
+Polling begins every 30 seconds and backs off to five minutes after errors.
+Slider changes are debounced and explicit actions are serialized. A fresh mode
+and profile guard rejects competing changes to Manual output. Normal schedule
+progression in the same Automatic mode is allowed for an explicit action, which
+preserves the other five fresh values. An echo or acknowledgement alone never
+confirms a command: the write socket remains open through a queried mode/profile
+barrier, then a fresh connection confirms output.
 
-Use HAHAPent's owned-code rollback to restore a prior module release. Rollback
-changes integration files, not lamp settings or schedules. Native config entries
-must be deleted through HA before Manager uninstall; code removal never edits
-HA storage manually. Refer to the [test-dev recovery runbook](../../docs/test-dev-runbook.md).
+Each admitted action has a three-second deadline including debounce and lock
+waits. Expiry settles the client transaction and invalidates queued actions;
+there is no write retry loop. This cannot bound HTTP admission, recall transmitted
+bytes or guarantee recovery through a physical outage. A filesystem save already
+in progress must settle before a newer intent can replace it. If a change is
+unconfirmed, wait for a successful read, inspect the state and competing apps,
+then make a new deliberate action. Runtime recovery never blindly replays output.
 
-## Evidence and licensing
+Use HAHAPent's owned-code rollback to restore an immutable prior release. Code
+rollback does not restore lamp output, schedules or HA configuration. Delete the
+native configuration entry through HA before uninstalling owned code; never edit
+HA storage manually. Follow [the test-dev recovery runbook](../../docs/test-dev-runbook.md).
 
-Protocol behavior was derived from supplied AMled 1.6.1 static evidence; no vendor
-Java, bytecode, original app package or device capture is distributed. Original
-reference scaffolding informed this independent Python implementation. License
-selection remains pending; no upstream app license is asserted for this project.
+## Advanced functions and evidence
 
-Synthetic protocol/TCP tests and real HA framework tests use manufactured data.
-The task report separately records actual device readback, bounded control tests,
-HA deployment and observations. Physical colours and optical output remain
-unverified until independently observed.
+The app-visible schedule editor, LPS/SPS/Custom presets, Cloud/Storm effects and
+clock sync are future work. Schedule upload, preset replacement, effects/clock
+writes, provisioning, factory reset and firmware updates are not exposed.
+Automatic schedule stepping/interpolation must be established from actual
+observation; the integration does not claim a decoded schedule viewer.
 
-Platform references: [HA config flows](https://developers.home-assistant.io/docs/core/integration/config_flow/),
+[Task 003](../../tasks/003-led-integration.md) retains the successful six-channel
+and Manual/Automatic tests, earlier incidents and corrected recovery reviews.
+Immutable 0.1.0/0.1.1 read-only releases and working 0.2.0 remain available.
+Task 004 separates synthetic protocol tests, real HA framework tests with fake
+transport, private optical observations, actual lamp readback and installation
+lifecycle results. A later success does not erase a historical failed experiment.
+
+The protocol implementation was independently derived from supplied AMled 1.6.1
+static evidence. No vendor Java, bytecode, original app package, private target,
+camera URL or capture is distributed. License selection remains pending.
+
+Platform references: [Light entities](https://developers.home-assistant.io/docs/core/entity/light/),
 [Number entities](https://developers.home-assistant.io/docs/core/entity/number/),
-and [coordinated fetching](https://developers.home-assistant.io/docs/integration_fetching_data/).
+[Tile cards](https://www.home-assistant.io/dashboards/tile/),
+and [Recorder exclusions](https://www.home-assistant.io/integrations/recorder/).

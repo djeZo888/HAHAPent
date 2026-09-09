@@ -3,6 +3,7 @@
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import MODE_OPTIONS
@@ -21,6 +22,7 @@ class AquariusMode(AquariusEntity, SelectEntity):
     """Resume the controller's stored program without reading or editing its schedule."""
 
     _attr_translation_key = "operating_mode"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_options = list(MODE_OPTIONS)
     _attr_icon = "mdi:calendar-clock"
 

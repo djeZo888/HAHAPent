@@ -380,3 +380,15 @@ decoding passed privately; colour labels and actual power behavior are still
 unvalidated at this checkpoint. The startup/KNX gate and fresh encrypted backup
 with isolated decryption/readability have passed for the authorized Task 004
 operations. No live restore was performed.
+
+Task 004 runtime: **112 native HA framework tests PASS**, **51 client tests
+PASS**, **12 module-packaging tests PASS**, and targeted Ruff checks PASS. The
+independent runtime review covers real temporary HA storage I/O, strict format
+preservation, canceled observation saves across reload/removal, power-memory
+restoration, and unchanged channel identities. See
+[aquarius-task004-runtime-review.md](aquarius-task004-runtime-review.md).
+These framework/TCP tests use synthetic lamp data. The exact software-power
+profile was separately admitted after the actual Manual-origin Shutdown and
+restoration test plus three fresh read-only confirmations; native HA power
+service acceptance remains pending. UI options and native Tile configuration
+are implemented without a custom card or Recorder changes.

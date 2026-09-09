@@ -21,6 +21,11 @@ SWAPPED_CONTROLLER = (0x14, 0x32)
 VERIFIED_WRITE_PROFILES: frozenset[tuple[tuple[int, int], tuple[int, int], int]] = frozenset(
     {((28, 30), (26, 29), 6)}
 )
+# Shutdown/return-from-Off requires separate physical validation. Ordinary
+# Manual/Automatic support must never implicitly enable this command family.
+VERIFIED_SHUTDOWN_PROFILES: frozenset[tuple[tuple[int, int], tuple[int, int], int]] = frozenset(
+    {((28, 30), (26, 29), 6)}
+)
 
 
 class ProtocolError(ValueError):
@@ -98,6 +103,19 @@ class SystemReply:
             self.version_bytes,
             self.channel_count_raw,
         ) in VERIFIED_WRITE_PROFILES
+
+    @property
+    def power_supported(self) -> bool:
+        """Whether this exact profile also supports validated software power control."""
+        return (
+            self.write_supported
+            and (
+                self.controller_bytes,
+                self.version_bytes,
+                self.channel_count_raw,
+            )
+            in VERIFIED_SHUTDOWN_PROFILES
+        )
 
 
 def parse_system(frame: bytes) -> SystemReply:
