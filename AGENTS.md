@@ -42,6 +42,14 @@ recovery sends only Automatic. Validate readback before enabling a shutdown prof
 competing changes. Stop further experiments after a failure until confirmed
 recovery and a repaired/reviewed procedure permit another attempt.
 
+The first native Automatic-origin composite failed its HA saved-origin display
+check after Off; guarded recovery and three fresh reads confirmed exact original
+Manual restoration. Lamp writes are paused while the reproduced entity-publication
+ordering bug is repaired and reviewed for a new immutable module version. Do not
+weaken the origin check or replace the published 0.3.0 tag/assets. Safe read-only
+investigation, backups and no-output-write lifecycle work continue. Corrected
+bounded revalidation remains authorized after offline repair and review pass.
+
 No setup, startup, polling, reload or reconnect path may write lamp state.
 Only explicit actions may switch power or restore a saved mix. Unknown saved
 origin falls back to the lamp's existing schedule on explicit On; never invent

@@ -180,3 +180,37 @@ F **3.027578 s**. Every action had known HTTP completion and three subsequent
 exact original-state readbacks. These are actual native service/lamp results;
 no slider touch or browser gesture is inferred from them. Detached launches
 returned promptly while HA-side workers retained cleanup ownership.
+
+## Lifecycle, recovery and Automatic acceptance incident
+
+Actual native reload and a second gated Core restart passed with Manager
+stopped. All existing identities, per-lamp label options and the owned dashboard
+survived; the installed 0.3.0 source matched its immutable revision. Three fresh
+readbacks confirmed exact unchanged Manual state after startup.
+
+The passive observer operated with its narrow filter and recorded three complete
+query-only diagnostic sessions with zero reported drops. Their timings exactly
+matched the later diagnostic helper, while native HA traffic was absent from
+the SSH App's visible namespace. Native HA wire coverage is therefore
+**INCONCLUSIVE**, despite the observer's scoped `QUERY_ONLY_OBSERVED` result.
+No broader capture or network/security change was attempted. The actual unchanged
+state observations and source/framework no-write tests remain separate evidence.
+
+A reviewed, detached read-only connection holder exercised actual exclusive
+connection contention. HA's query failed after **5.022785 seconds**, and the
+channel entities became unavailable. The holder closed within its nine-second
+maximum without sending any control frame. After the native refresh cooldown,
+HA recovered availability; three subsequent independent reads matched the
+original Manual state. This is actual connection contention/recovery, not an
+induced network outage. No lamp write service was invoked.
+
+The first Automatic-origin composite **FAILED** at its native saved-origin
+observation after successful Resume and Off. The worker did **not** send On.
+Deliberate guarded cleanup restored the exact original Manual state in
+**5.551953 seconds**, followed by three matching independent reads. The failure
+and full private report are preserved. Further lamp writes paused for repair.
+Source investigation found that Off publishes entity data before confirming its
+persisted origin; the Light's cached `on_behavior` can therefore still describe
+the missing-origin fallback. A native framework reproduction and separately
+versioned repair are in progress. The saved-origin acceptance gate is retained;
+the published 0.3.0 tag/assets will remain immutable.
