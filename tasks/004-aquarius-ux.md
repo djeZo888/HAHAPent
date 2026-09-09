@@ -337,5 +337,6 @@ The 0.3.1 release was promoted by changing metadata only; its source tag and all
 asset IDs and hashes are preserved. The embedded artifact catalog remains the
 immutable publication-time candidate snapshot; the current canonical catalog
 records completed actual acceptance. Earlier releases, including failed 0.3.0,
-remain intact. The final source/docs checkpoint must complete CI before merge;
-the final merge and CI are recorded in the Git history and owner handoff.
+remain intact. The [final delivery record, PR 13](https://github.com/djeZo888/HAHAPent/pull/13),
+uses the same completed-CI-before-merge gate. Its checks and merge commit are
+attached to that record and identified in the owner handoff.

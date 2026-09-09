@@ -344,22 +344,24 @@ returned in 0.149–0.179 seconds, leaving the detached HA-side worker to own th
 test and cleanup. This establishes control with Manager off and no attached
 development SSH dependency; literal physical computer power-off was not tested.
 
-Task 003 functional acceptance is **COMPLETE**: final health and the native
-dashboard passed; Manager 0.1.2 and configured module 0.2.0 remain available.
-The final change must pass required GitHub checks before its main merge.
-Native A01, direct F01 and the original incident
-retain their failed outcomes. Optical colour naming/calibration is NOT_TESTED;
-software off and program uploads are unsupported and unexercised. Other devices,
+### Historical Task 003 completion checkpoint
+
+Task 003 functional acceptance completed with final health and native dashboard
+checks passing; Manager 0.1.2 and configured module 0.2.0 were left available.
+Native A01, direct F01 and the original incident retain their failed outcomes.
+At that checkpoint, optical colour naming/calibration was NOT_TESTED; software
+Off and program uploads were unsupported and unexercised. Other devices,
 production, KNX configuration and network/security settings were preserved.
 
-Final checkpoint: native dashboard rendering and final Core/KNX/Manager/module
-health passed; the owner receives private dashboard/device/entity links.
-Manager is running and module 0.2.0 remains configured in Automatic program.
-Release promotion preserved the tag and every asset. Final tests correct only
-the exclusive-client fixture's Linux EOF versus macOS reset expectation; all
-three affected tests passed, with worker hashes unchanged. CI runs 346 unit
-checks, 56 native HA tests, and the actual amd64 App image/runtime checks. The
-final head must complete those checks successfully before main merge.
+The owner received private dashboard/device/entity links. Manager was running
+and module 0.2.0 was configured in Automatic program. Release promotion preserved
+the tag and every asset. Final tests corrected only the exclusive-client
+fixture's Linux EOF versus macOS reset expectation; all three affected tests
+passed, with worker hashes unchanged. CI ran 346 unit checks, 56 native HA tests,
+and the amd64 App image/runtime checks. Task 003's final main commit
+`cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24` passed
+[completed main CI](https://github.com/djeZo888/HAHAPent/actions/runs/34293970401).
+Task 004's current installed version and lamp-state evidence follow below.
 
 ## Task 004 verification and delivered release
 

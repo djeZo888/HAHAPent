@@ -57,8 +57,9 @@ check after Off; guarded recovery and three fresh reads confirmed exact original
 Manual restoration. The reproduced entity-publication ordering bug is repaired
 and independently reviewed in 0.3.1. Verified publication, installation, health
 gates and corrected bounded Manual/Automatic revalidation have now passed.
-Do not weaken the origin check or replace the published 0.3.0 tag/assets. Safe read-only investigation,
-backups and no-output-write lifecycle work continue.
+Do not weaken the origin check or replace the published 0.3.0 tag/assets.
+The safe investigation, backup and no-output-write lifecycle work completed
+without erasing the earlier failed result.
 
 No setup, startup, polling, reload or reconnect path may write lamp state.
 Only explicit actions may switch power or restore a saved mix. Unknown saved
