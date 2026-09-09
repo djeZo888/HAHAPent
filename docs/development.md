@@ -392,3 +392,14 @@ profile was separately admitted after the actual Manual-origin Shutdown and
 restoration test plus three fresh read-only confirmations; native HA power
 service acceptance remains pending. UI options and native Tile configuration
 are implemented without a custom card or Recorder changes.
+
+Task 004 installed acceptance checkpoint: immutable 0.3.0 was discovered and
+installed through actual authenticated Manager Ingress API, followed by a gated
+Core restart and unchanged KNX/startup verification. All prior identities and
+the new native Light/Status/Button were verified. Six isolated optical samples
+restored in 3.60–3.94 seconds with three later exact readbacks each. Four colour
+labels were established; the red pair remains configurable. Native Manual
+power and Resume schedule passed with Manager stopped. Native options and
+Tile dashboard persistence passed independent private storage checks. Actual
+iPhone gestures remain untested; source/schema checks are identified separately.
+See the current task report for actual timings and remaining acceptance.

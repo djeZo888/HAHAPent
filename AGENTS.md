@@ -49,6 +49,15 @@ full-brightness channel values. Keep runtime memory versioned and profile-bound.
 Do not upload/edit schedules, presets, effects or clock settings; do not operate
 Shelly, KNX, other devices, production, provisioning, firmware or factory reset.
 Do not change network/security/camera settings or global Recorder settings.
+For Task 004's required Automatic-origin native power acceptance, a separate
+composite may begin from the owner's Manual snapshot, invoke Resume schedule,
+Off and On, then deliberately restore that exact Manual snapshot. Its explicit
+maximum is twenty seconds, with a six-second experiment and a 19.5-second
+cleanup deadline. This bounded mode/power procedure is within the current
+Task 004 authorization, which does not specify a numerical composite duration;
+it does not extend the ten-second optical or single-action tests. Require
+separate offline tests and independent review before execution. Unknown HA
+completion never permits replay, even with the larger cleanup reserve.
 A failing experiment does not stop safe investigation or independent task work.
 Do not regenerate credentials. License selection remains pending.
 
