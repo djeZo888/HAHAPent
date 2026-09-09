@@ -214,3 +214,23 @@ persisted origin; the Light's cached `on_behavior` can therefore still describe
 the missing-origin fallback. A native framework reproduction and separately
 versioned repair are in progress. The saved-origin acceptance gate is retained;
 the published 0.3.0 tag/assets will remain immutable.
+
+The stale-state mechanism was reproduced through actual HA REST service and
+state views with a synthetic TCP lamp for both origins. Candidate **0.3.1**
+settles power memory before publishing the corresponding entity data; matching
+channel/mode/On paths now publish after memory invalidation. Failed persistence
+still publishes known physical readback, and cancellation retains the existing
+unavailable handling. No protocol/client/store or frozen worker changed.
+Author full native suite: **117 PASS**. Independent affected power/coordinator
+suite: **56 PASS**. Packaging: **12 PASS**; Ruff PASS. The
+[publication-order review](../docs/aquarius-power-publication-review.md) records
+exact hashes and failure/cancellation coverage. Corrected actual lamp acceptance
+remains pending publication and deployment of the new immutable version.
+
+A second fresh encrypted backup passed isolated decryption/readability, retaining
+the initial backup and its private record. Actual Manager rollback to **0.2.0**
+passed. After its gated Core restart, immutable source comparison, one loaded
+entry/device, all twelve original entity IDs, versioned options and the owned
+dashboard were preserved. Three independent reads confirmed unchanged Manual
+state. The new UX entities are unavailable while the historical version is
+loaded; the final corrected version will replace it before handoff.

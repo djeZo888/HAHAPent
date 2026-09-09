@@ -403,3 +403,11 @@ power and Resume schedule passed with Manager stopped. Native options and
 Tile dashboard persistence passed independent private storage checks. Actual
 iPhone gestures remain untested; source/schema checks are identified separately.
 See the current task report for actual timings and remaining acceptance.
+
+Task 004 repair gate: the Automatic composite detected stale native Light
+origin attributes after Off and restored the exact original Manual state. The
+failed actual result is preserved. Real HA REST fixtures reproduced the issue;
+candidate 0.3.1 passed 117 native framework tests, 56 independent affected tests
+and 12 packaging tests. Power memory now settles before entity publication.
+The frozen recovery worker and protocol controls are unchanged. Actual rollback
+to 0.2.0 preserved configuration/identities; final 0.3.1 revalidation is pending.
