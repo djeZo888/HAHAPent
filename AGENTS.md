@@ -2,46 +2,47 @@
 
 ## Current scope
 
-Tasks 001 and 002 are complete; their historical Manager 0.1.1 acceptance
-evidence is in `tasks/002-suite-manager.md`. The Task 003 continuation has
-installed Manager 0.1.2 on protected test-dev and verified catalog refresh/cache
-persistence. Aquarius Plant LED 0.2.0 is published, installed and configured
-through Manager. Actual native HA A–F controls, explicit Manual/Automatic,
-bounded restoration, code lifecycle and identity preservation passed. All seven
-native control checks ran with Manager stopped and detached HA-side workers
-completed after the launching SSH sessions ended. Configured Core startup with
-Manager stopped also passed. Final health/dashboard/CI verification is tracked
-in `tasks/003-led-integration.md`; do not repeat completed control tests merely
-to reconstruct earlier chat context. Task 002's deployment/Core restart
-authorization was specific to that completed device-free lifecycle. Future deployment,
-integration or Core restart work must follow the current user's authorization
-and the runbook; do not infer a blanket operational grant from prior tests.
-Task 003 continuation authorizes targeted Manager catalog fixes, App builds,
-updates/restarts, module publication/deployment/native configuration, and
-necessary test-dev Core restarts after the runbook backup/startup/KNX gate.
-Keep the working Aquarius Plant LED installation configured and available for
-owner verification. The former no-rebuild restriction does not apply to
-these targeted changes. Preserve the immutable read-only release and historical
-failed-test report.
-The recovery and observer-handoff repairs passed offline tests and independent
-review before renewed controls; historical failures remain in the task report.
-Any further authorized bounded testing must retain those reviewed safeguards.
-Use a self-contained HA-side transaction with monotonic deadlines and cleanup
-independent of the development connection. Initial excursions change one channel
-by at most five percentage points for at most ten seconds, including deliberate
-restoration of channels and original mode, with an early measured recovery margin.
-Only the verified controller/version/six-channel profile is enabled in 0.2.0.
-Other profiles and Shutdown/unknown starting modes remain read-only; optical
-colour mapping and software off remain unsupported. A failed experiment
-pauses further writes for recovery and repair, while safe investigation and
-other authorized implementation work continue. Do not repeat a live experiment
-while restoration is unconfirmed or overwrite competing changes blindly.
-No setup, startup, polling, reconnect or reload path may write lamp state.
-Private target configuration, raw captures and supplied evidence stay outside Git.
-The final working release was reinstalled and configured after lifecycle tests;
-retain it for owner verification. Do not infer new operational authorization
-from this completed validation evidence.
-Do not regenerate credentials or repeat bootstrap. License selection is pending.
+Tasks 001–003 are complete. Task 003's final committed baseline is
+`cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24`; Manager 0.1.2 and Aquarius Plant
+LED 0.2.0 are installed and configured on protected test-dev. Its actual native
+controls, lifecycle, startup and independence evidence remain historical in
+`tasks/003-led-integration.md`. Preserve the working installation and all
+immutable releases; do not repeat bootstrap or rebuild/redesign Suite Manager.
+
+Task 004 authorizes improving this existing integration: clearer mode status
+and Resume schedule, configurable evidence-backed channel labels, versioned
+state-preserving software On/Off, native Tile sliders, immutable module
+publication/update, and necessary gated test-dev Core restarts. Leave the final
+version installed and configured for owner review. Current evidence belongs in
+`tasks/004-aquarius-ux.md` and `docs/development.md`.
+
+The private camera share is for read-only optical observation only. Never
+publish its URL/token, device targets, frames/video or operational evidence.
+Use multiple frames for optical comparisons; do not guess ambiguous colour
+pairs or infer PWM frequency. A–F unique IDs must remain stable. An ambiguous
+pair stays configurable and gets one grouped owner-confirmation request.
+
+Only the coordinator performs live operations. Extend the proven detached
+HA-side worker with offline failure tests and documented independent review
+before new experiment types. Initial optical samples change one channel by at
+most five percentage points at a modest output (initial ceiling 20%), within
+ten seconds including confirmed cleanup. Hold time must retain the existing
+early recovery reserve. Software shutdown is a separately authorized bounded
+mode test, initially from stable Automatic with mode-only Automatic recovery;
+validate its reply/channel-retention behavior before admitting Manual snapshot
+restoration or enabling the released shutdown profile. Never blindly overwrite
+competing changes. Stop further experiments after a failure until confirmed
+recovery and a repaired/reviewed procedure permit another attempt.
+
+No setup, startup, polling, reload or reconnect path may write lamp state.
+Only explicit actions may switch power or restore a saved mix. Unknown saved
+origin falls back to the lamp's existing schedule on explicit On; never invent
+full-brightness channel values. Keep runtime memory versioned and profile-bound.
+Do not upload/edit schedules, presets, effects or clock settings; do not operate
+Shelly, KNX, other devices, production, provisioning, firmware or factory reset.
+Do not change network/security/camera settings or global Recorder settings.
+A failing experiment does not stop safe investigation or independent task work.
+Do not regenerate credentials. License selection remains pending.
 
 ## Credentials and privacy
 Resolve the private profile at `~/.config/hahapent/bootstrap.json`, then its
@@ -63,7 +64,7 @@ Only the coordinator may mutate HA or merge/push Git. Subagents may implement,
 test, or review isolated assigned source files; never provide them raw secrets.
 Use only the exact repository and host selected by the protected profile.
 Preserve KNX, existing integrations, automations, App keys/options, and remote
-history. No device controls outside the bounded Task 003 lamp tests, production access, network scans,
+history. No device controls outside the authorized bounded Task 004 lamp tests, production access, network scans,
 Proxmox administration, Supervisor/OS/VM restarts, or firmware upgrades.
 Authorized Core restarts require the documented startup/KNX and backup safety gate.
 Before deployment take a fresh encrypted backup, download it privately, retain
@@ -92,6 +93,6 @@ the authorized isolated marker round trip. Test-dev credentials are never
 available to public CI. A new task must not inherit authority to mutate HA
 merely from a previous task's completed write probe.
 
-Task 003 commands and evidence are recorded in `docs/development.md` and
-`tasks/003-led-integration.md` as checks complete. Task 001 and Task 002 evidence remains historical. Public CI must use only
+Task 004 commands and evidence are recorded in `docs/development.md` and
+`tasks/004-aquarius-ux.md` as checks complete. Tasks 001–003 evidence remains historical. Public CI must use only
 synthetic fixtures and minimal built-in GitHub workflow permissions.

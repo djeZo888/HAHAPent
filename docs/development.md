@@ -360,3 +360,13 @@ the exclusive-client fixture's Linux EOF versus macOS reset expectation; all
 three affected tests passed, with worker hashes unchanged. CI runs 346 unit
 checks, 56 native HA tests, and the actual amd64 App image/runtime checks. The
 final head must complete those checks successfully before main merge.
+
+## Task 004 verification in progress
+
+Task 004 begins from Task 003's completed main commit; its scope and separate
+actual/synthetic evidence are tracked in [Task 004](../tasks/004-aquarius-ux.md).
+The initial privacy guard rejects private camera capability links and local
+camera configuration filenames. Seventeen secret-check unit tests and Ruff
+passed. Protected API/pinned SSH access and the Task 004 startup/KNX review
+passed read-only checks. Camera frames, target data and detailed operational
+reports remain in protected state outside Git.

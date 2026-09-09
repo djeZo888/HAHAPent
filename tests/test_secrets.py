@@ -24,6 +24,8 @@ class SecretChecks(unittest.TestCase):
             "project.knxproj",
             "trace.pcapng",
             "device.local.json",
+            "camera.local.json",
+            "camera-test.local.json",
             "private_evidence/analysis.md",
             "vendor.xapk",
             "vendor.apk",
@@ -39,6 +41,14 @@ class SecretChecks(unittest.TestCase):
         self.assertIn("github_token", inspect_blob("config.py", token))
         key = b"-----BEGIN " + b"OPENSSH PRIVATE KEY-----"
         self.assertIn("private_key", inspect_blob("config.py", key))
+
+    def test_private_camera_capability_links_are_not_publishable(self):
+        share = b"https://monitor.ui.com/" + b"11111111-2222-3333-4444-555555555555"
+        for value in (share, share.upper(), share.replace(b"https:", b"http:")):
+            with self.subTest(value=value):
+                self.assertIn("private_camera_share", inspect_blob("notes.md", value))
+                self.assertIn("private_camera_share", inspect_blob("notes.example", value))
+        self.assertEqual(inspect_blob("docs.md", b"https://monitor.ui.com/"), [])
 
     def test_examples_do_not_bypass_value_scans(self):
         self.assertEqual(inspect_blob(".env.example", b"TOKEN=<placeholder>"), [])
