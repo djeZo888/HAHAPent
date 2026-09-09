@@ -388,7 +388,8 @@ class ExclusiveHAHandoffTests(unittest.TestCase):
             finally:
                 observer.close()
         self.assertEqual(lamp.rejected_connections, 1)
-        self.assertEqual(service.actuator_errors, ["ConnectionResetError"])
+        self.assertEqual(len(service.actuator_errors), 1)
+        self.assertIn(service.actuator_errors[0], ("EOFError", "ConnectionResetError"))
         self.assertTrue(
             all(command in (base.SYSTEM_QUERY, base.CHANNEL_QUERY) for command in lamp.observed)
         )

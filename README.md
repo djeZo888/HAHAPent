@@ -11,7 +11,7 @@ installation, updates, removal, and code recovery.
 | --- | --- | --- |
 | [001](tasks/001-access-and-repository.md) | Access and repository bootstrap | Complete; historical evidence retained |
 | [002](tasks/002-suite-manager.md) | Installable Suite Manager and safe module lifecycle | Complete at release 0.1.1; historical acceptance retained |
-| [003](tasks/003-led-integration.md) | Aquarius Plant LED | Manager 0.1.2 and direct channel validation passed; final module 0.2.0 delivery and native control acceptance pending |
+| [003](tasks/003-led-integration.md) | Aquarius Plant LED | Complete; 0.2.0 installed and configured, native controls/lifecycle/independence passed |
 
 [Released Manager 0.1.2](https://github.com/djeZo888/HAHAPent/releases/tag/v0.1.2)
 is installed and verified on test-dev, targets amd64 and exposes no LAN management
@@ -19,14 +19,18 @@ port. Its **Refresh** action retrieves validated built-in catalog metadata with
 a persistent fallback cache. A new module version was discovered without
 rebuilding the App; installation and update remain explicit actions.
 
-The [Aquarius module](modules/aquarius_plant_led/README.md) 0.2.0 source provides
+The [Aquarius module](modules/aquarius_plant_led/README.md)
+[0.2.0 release](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.2.0) provides
 six A–F percentage controls and **Manual** / **Automatic program** selection for
-the validated controller profile. All six channels passed bounded direct-TCP
-change/readback/restoration tests after the recovery procedure was repaired.
-Final 0.2.0 publication, installation and actual HA control acceptance are still
-pending; [Task 003](tasks/003-led-integration.md) records that distinction and the
-earlier failed tests. Other controller profiles remain read-only. Setup, startup,
-polling, reconnect and reload only read lamp state.
+the validated controller profile. It is installed and configured through Manager
+0.1.2 on test-dev. All six actual HA Number controls and explicit Manual/Automatic
+selection passed bounded checks with independent lamp readback and confirmed
+restoration. The Manager was stopped throughout, and the HA-side workers
+continued after their launching SSH sessions ended. Configured Core startup
+with Manager stopped also passed. [Task 003](tasks/003-led-integration.md)
+records the evidence, final verification status and earlier failed tests.
+Other controller profiles remain read-only. Setup, startup, polling, reconnect
+and reload only read lamp state.
 
 The historical read-only
 [0.1.0](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
@@ -44,7 +48,9 @@ exact test scope and final release record.
 Task 003 separately passed the Aquarius read-only update/rollback lifecycle,
 preserved native entity identity during rollback, and completed native entry
 deletion followed by Manager code removal. Final working controls and operation
-independent of Manager/the development connection remain acceptance gates.
+independent of Manager/the development connection subsequently passed on the
+reinstalled and configured 0.2.0 release. Optical colour mapping and a software
+power switch are unsupported.
 
 Start with [installation and use](docs/installation.md) and the
 [App guide](manager/DOCS.md). The [Task 002 report](tasks/002-suite-manager.md)

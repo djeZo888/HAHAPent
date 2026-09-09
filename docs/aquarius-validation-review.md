@@ -334,3 +334,18 @@ timeout: its blocked socket closes after 0.3 seconds. Its service actuator uses
 the base TCP worker, not the actual HA integration framework. These remain
 synthetic tests. The next actual native test must record its own HTTP and TCP
 evidence, stop on the first failure, and preserve the earlier A01 failure.
+
+### Cross-platform test assertion correction
+
+The worker-fix CI ran 346 tests on Linux and exposed one test-only portability
+assumption: the exclusive-client fixture's terminal close raised `EOFError`
+instead of macOS's `ConnectionResetError`. The assertion now requires exactly
+one of these two terminal-close results. It still requires one blocked
+connection, an identical observed state, and query-only frames without mutation.
+The coordinator independently reviewed this narrow diff; all three affected
+exclusive-client tests passed locally. Neither executable worker changed, so
+this does not change the actual lamp validation procedure or its approval.
+
+Final test-file SHA-256:
+`7cfebf148d53c79bdbfc9717a4197d36d08d130e89ac973f09c964a68c4d3acd`.
+The earlier frozen test hashes document their historical review checkpoints.

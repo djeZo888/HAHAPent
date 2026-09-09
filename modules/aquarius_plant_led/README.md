@@ -7,14 +7,19 @@ Each channel uses integer steps from `0–100%`; letters describe protocol order
 not verified colours or wavelengths.
 
 The local Home Assistant integration uses raw TCP and needs no cloud account,
-MQTT, Manager process or developer computer at runtime. All six channels and
-Manual/Automatic operation passed bounded direct-TCP device validation. Actual
-HA service and installed lifecycle results are recorded separately in
-[Task 003](../../tasks/003-led-integration.md).
+MQTT, Manager process or developer computer at runtime. Version 0.2.0 is installed
+and configured through Manager 0.1.2 on test-dev. All six actual HA Number
+controls and explicit Manual/Automatic selection passed bounded checks with
+independent lamp readback and confirmed restoration. Manager was stopped for
+all seven checks; detached HA-side workers completed after their launching SSH
+sessions ended. Configured Core startup with Manager stopped also passed.
+[Task 003](../../tasks/003-led-integration.md) separates those actual results
+from direct-TCP and synthetic tests and records final verification status.
 
 The immutable [0.1.0 read-only candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.1.0)
 and interim 0.1.1 release remain historical. Two earlier tests exceeded the
-ten-second recovery bound; later successful checks do not erase those failures.
+ten-second recovery bound; a later native HA attempt had uncertain completion.
+Successful checks do not erase those failures.
 The [incident record](../../tasks/003-led-integration.md#continuation-live-delivery-and-recovery-evidence)
 and [independent recovery reviews](../../docs/aquarius-validation-review.md)
 preserve the failed outcomes, deliberate recoveries and subsequent repairs.

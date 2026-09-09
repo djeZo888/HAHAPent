@@ -264,8 +264,8 @@ channels confirmed at 2.056392 seconds, original Automatic at 2.653862 seconds,
 and total excursion 2.653872 seconds. Launching SSH returned in 0.140 seconds;
 the detached worker completed locally. Two later read-only checks confirmed
 Automatic. Together with A–E, this supplies successful bounded evidence for all
-six direct channel controls. Actual HA Number/Select service controls remain
-pending and are not inferred from the adapter tests.
+six direct channel controls. Actual HA Number/Select services were still pending
+at that checkpoint; the later native results below are separate from adapter tests.
 
 Actual Manager 0.1.2 App update, Ingress refresh and cache persistence passed.
 Its later Refresh discovered module 0.1.1 without rebuilding the App; the real
@@ -303,10 +303,9 @@ timed out after 0.803462 seconds on a second connection while the first remained
 open, and passed a fresh full read in 0.425227 seconds after releasing the first.
 The final read matched the unchanged Automatic baseline. The adapter was holding
 its baseline TCP socket during the HA request, blocking the HA client's independent
-connection under the observed conditions. Repair will release that socket before
-the actuator call and add an exclusive-connection simulator regression, followed
-by independent review. Further writes remain paused; native control and
-control operation independent of Manager/the development connection are pending.
+connection under the observed conditions. The repair releases that socket before
+every actuator call, including mode cleanup. Three exclusive-connection simulator
+regressions and independent review passed before native controls resumed.
 
 Configured startup availability with Manager stopped separately **PASS**: final
 0.2.0 remained loaded after another gated Core restart, with the exact protected
@@ -314,5 +313,49 @@ target, six Numbers and a Select, and all installed Python/manifest bytes checke
 Core was running HA 2026.9.1; KNX was loaded/connected and the immutable project
 and startup baselines were unchanged. Two fresh post-startup TCP read-only checks
 confirmed Automatic. This demonstrates configured startup and availability with
-Manager off, while actual HA control acceptance still awaits the adapter repair.
-Task 003 is installed and configured but remains **IN PROGRESS**.
+Manager off, separately from the actual control results that follow.
+
+The final adapter gate passed **22 tests in 18.913 seconds** independently and
+**65 combined base/adapter tests in 60.676 seconds**, with Ruff PASS. Reviewed
+adapter SHA-256 is
+`7669e3c363cd1c9a38b39cd54d3dd89c3047a787a10e27c585e72a4bd686045b`;
+test SHA-256 is
+`358356dc9f64e4177014e4efc2b357bee9f446d566ea0ef10d0163c934d0d685`.
+The [review](aquarius-validation-review.md#ha-observer-handoff-repair-review)
+preserves the native A01 failure and explains the observer-release boundary.
+The earlier assembled source baseline passed 343 unit tests and 56 native HA
+framework tests. Worker-fix commit `0b2db56637f6ceab8cd74d0a2c213cdb93d0f065`
+has [CI 34292965170](https://github.com/djeZo888/HAHAPent/actions/runs/34292965170)
+failed on a platform-specific test expectation; the final checkpoint below records its repair.
+
+Actual installed **0.2.0 native HA controls: all seven PASS**, with Manager 0.1.2
+stopped throughout. Channel excursions were A02 3.298624 seconds, B01 3.473584,
+C01 3.526991, D01 3.587826, E01 4.462599 and F01 3.520784. Explicit Manual then
+Automatic through the HA Select passed in 3.086147 seconds. Every action recorded
+HTTP completion and fresh independent TCP confirmation. Channel tests changed
+one percentage point, preserved the other five values, then deliberately restored
+the channels and Automatic within ten seconds. Two subsequent fresh read-only
+checks confirmed Automatic after each of the seven tests.
+
+E's channel-restoration read hit a real 0.8-second timeout; one fresh read-only
+retry confirmed recovery without repeating any write. This actual fault-path
+PASS remained within its 4.462599-second total bound. Launching SSH sessions
+returned in 0.149–0.179 seconds, leaving the detached HA-side worker to own the
+test and cleanup. This establishes control with Manager off and no attached
+development SSH dependency; literal physical computer power-off was not tested.
+
+Task 003 functional acceptance is **COMPLETE**: final health and the native
+dashboard passed; Manager 0.1.2 and configured module 0.2.0 remain available.
+The final change passes required GitHub checks before its main merge. Native A01, direct F01 and the original incident
+retain their failed outcomes. Optical colour naming/calibration is NOT_TESTED;
+software off and program uploads are unsupported and unexercised. Other devices,
+production, KNX configuration and network/security settings were preserved.
+
+Final checkpoint: native dashboard rendering and final Core/KNX/Manager/module
+health passed; the owner receives private dashboard/device/entity links.
+Manager is running and module 0.2.0 remains configured in Automatic program.
+Release promotion preserved the tag and every asset. Final tests correct only
+the exclusive-client fixture's Linux EOF versus macOS reset expectation; all
+three affected tests passed, with worker hashes unchanged. CI runs 346 unit
+checks, 56 native HA tests, and the actual amd64 App image/runtime checks. The
+final head must complete those checks successfully before main merge.
