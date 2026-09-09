@@ -28,9 +28,12 @@ before new experiment types. Initial optical samples change one channel by at
 most five percentage points at a modest output (initial ceiling 20%), within
 ten seconds including confirmed cleanup. Hold time must retain the existing
 early recovery reserve. Software shutdown is a separately authorized bounded
-mode test, initially from stable Automatic with mode-only Automatic recovery;
-validate its reply/channel-retention behavior before admitting Manual snapshot
-restoration or enabling the released shutdown profile. Never blindly overwrite
+mode test preserving the observed starting mode. The observed Manual baseline
+requires Manual-first recovery: confirm mode 1 and original output; only observed
+Shutdown-zero followed by independently confirmed Manual-zero and a fresh exact
+guard may admit one deliberate saved-vector restoration. A retained Off vector
+followed by changed Manual output is contradictory and prohibits replay. Automatic
+recovery sends only Automatic. Validate readback before enabling a shutdown profile. Never blindly overwrite
 competing changes. Stop further experiments after a failure until confirmed
 recovery and a repaired/reviewed procedure permit another attempt.
 

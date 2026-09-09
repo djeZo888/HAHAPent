@@ -29,10 +29,12 @@ no full-brightness vector is invented. Startup and background paths never write.
   selected output at most 20%, and at most ten seconds including restoration.
 - Compare multiple private camera frames; report ambiguous whites/reds as
   configurable pairs, never as guessed mappings. Do not infer PWM frequency.
-- Begin shutdown validation from stable Automatic. Query mode/channel behavior,
-  then deliberately restore Automatic without replaying a stale channel vector.
-  Admit Manual-origin power tests only after response/retention semantics and
-  recovery have passed offline tests and independent review.
+- Preserve the observed starting mode in shutdown validation. The current stable
+  Manual baseline requires Manual-first recovery. Only observed Shutdown-zero
+  followed by confirmed Manual-zero and a fresh exact guard may admit one
+  deliberate saved-vector restoration. Retained Off output followed by changed
+  Manual output is contradictory and prohibits replay. Automatic-origin recovery
+  sends only Automatic. Each path requires offline tests and independent review.
 - Read-only observation may characterize normal schedule progression; no
   schedule/preset/effect/clock upload or editing is authorized.
 - Use the existing backup/startup/KNX gate before deployment/Core restart.
@@ -46,5 +48,16 @@ no full-brightness vector is invented. Startup and background paths never write.
 | Completed committed baseline | PASS | Main and completed CI verified |
 | Protected HA/SSH access | PASS | Existing token/key/host pin reused; no write probe |
 | Native computer/iPhone surface discovery | BLOCKED currently | Computer Use reports the Mac locked; unlock requested while safe work continues |
-| Camera observations and colour mapping | NOT_TESTED | Private optical access and capture procedure under investigation |
+| Private camera read-only access | PASS | Guest-scoped stream decoded; multiple frames show the LED board; no camera settings changed |
+| Optical colour mapping | NOT_TESTED | Bounded worker under offline review; no colour labels guessed |
 | Shutdown hardware behavior | NOT_TESTED | New bounded worker/recovery design under offline review |
+
+The initial Task 004 checkpoint `beda55630fbcf743a26affccb73838cf15d15902`
+was pushed and [CI completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34338192756).
+A fresh encrypted backup was downloaded privately; isolated decryption and
+selected configuration readability passed. A full live restore was not tested.
+Current installed baseline retains one configuration entry/device and twelve
+available entities. Actual read-only samples show stable Manual output, which
+is preserved; they do not establish Automatic interpolation. The camera viewing
+path now works through guest-scoped MQTT/WebRTC streaming with TLS verification.
+No camera configuration was changed.

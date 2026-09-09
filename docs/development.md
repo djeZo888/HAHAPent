@@ -370,3 +370,13 @@ camera configuration filenames. Seventeen secret-check unit tests and Ruff
 passed. Protected API/pinned SSH access and the Task 004 startup/KNX review
 passed read-only checks. Camera frames, target data and detailed operational
 reports remain in protected state outside Git.
+
+Task 004 direct-worker gate: coordinator and independent reviewer each ran
+36 synthetic/simulated and loopback TCP tests successfully. The reviewed frozen
+worker adds modest optical holds and mode-preserving Shutdown recovery; see
+[aquarius-task004-validation-review.md](aquarius-task004-validation-review.md)
+for hashes, boundaries and fault coverage. Camera guest-stream access and frame
+decoding passed privately; colour labels and actual power behavior are still
+unvalidated at this checkpoint. The startup/KNX gate and fresh encrypted backup
+with isolated decryption/readability have passed for the authorized Task 004
+operations. No live restore was performed.
