@@ -1,11 +1,17 @@
 # Aquarius Plant LED
 
 Aquarius Plant LED provides local control of the lamp through native Home
-Assistant entities. The 0.3.0 UX update adds a main software-power Light, a clear
+Assistant entities. The 0.3.1 UX update adds a main software-power Light, a clear
 mode status, **Resume schedule**, configurable spectral labels and native Tile
 sliders. Six independent intensity controls remain available; there is no RGB
 wheel or invented master-brightness control. See [Task 004](../../tasks/004-aquarius-ux.md)
 for the current release, installation and actual hardware acceptance status.
+
+Version 0.3.1 publishes saved power-origin attributes only after memory has
+settled, so the Light immediately describes the correct next On action. The
+immutable 0.3.0 candidate retains a known stale-attribute issue after Off; use
+0.3.1 for this UX. This repair does not alter protocol commands or add background
+restoration.
 
 ## Everyday use
 

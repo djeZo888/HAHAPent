@@ -122,7 +122,7 @@
     {
       "id": "aquarius-plant-led",
       "name": "Aquarius Plant LED",
-      "description": "State-preserving software On/Off, clear mode status and Resume schedule, configurable six-channel labels and native Tile sliders. Only the verified profile permits controls; startup and background paths never write. See Task 004 for actual acceptance.",
+      "description": "Superseded UX candidate: saved power-origin attributes can remain stale after Off. Use 0.3.1; immutable tag and assets are retained for historical evidence.",
       "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.3.0/modules/aquarius_plant_led/README.md",
       "integration_domain": "aquarius_plant_led",
       "version": "0.3.0",
@@ -151,8 +151,46 @@
         "manager": "not_required"
       },
       "extensions": {
-        "release_status": "ux-candidate",
+        "release_status": "superseded-ux-candidate",
         "hardware_controls": "direct_manual_software_power_validated",
+        "live_ha_acceptance": "saved_origin_display_failed_restored",
+        "superseded_by": "0.3.1"
+      }
+    },
+    {
+      "id": "aquarius-plant-led",
+      "name": "Aquarius Plant LED",
+      "description": "State-preserving software On/Off, clear mode status and Resume schedule, configurable six-channel labels and native Tile sliders. Only the verified profile permits controls; startup and background paths never write. See Task 004 for actual acceptance.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.3.1/modules/aquarius_plant_led/README.md",
+      "integration_domain": "aquarius_plant_led",
+      "version": "0.3.1",
+      "minimum_manager_version": "0.1.2",
+      "required_features": [],
+      "home_assistant": {
+        "min_version": "2026.9.1",
+        "max_version_exclusive": "2026.9.2"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/aquarius-plant-led-v0.3.1/aquarius-plant-led-0.3.1.zip",
+        "sha256": "285b8e1d050d7679243c3d3e8a7840fdbb1e5d451327e91cb7dd883112a025d5",
+        "format": "zip"
+      },
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "e709fc49fc8e62087ab23786707f765b9c2099dd",
+        "source_path": "modules/aquarius_plant_led"
+      },
+      "license": {
+        "status": "pending"
+      },
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "extensions": {
+        "release_status": "ux-candidate",
+        "hardware_controls": "existing_exact_profile_validated",
         "live_ha_acceptance": "pending"
       }
     }

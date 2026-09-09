@@ -8,10 +8,11 @@ import pytest
 import pytest_socket
 from custom_components.aquarius_plant_led import protocol
 from custom_components.aquarius_plant_led.const import DOMAIN, NAME
-from custom_components.aquarius_plant_led.state_store import PowerMemoryError
+from custom_components.aquarius_plant_led.state_store import NO_MANUAL_STATE, PowerMemoryError
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from tests.aquarius_tcp_helpers import SYNTHETIC_PROFILES, SyntheticLamp
@@ -54,6 +55,120 @@ async def power(hass, entry, action):
     await hass.services.async_call(
         "light", action, {"entity_id": entity_id(hass, entry, "light", "power")}, blocking=True
     )
+
+
+@pytest.mark.parametrize(
+    ("origin", "expected_reason"),
+    (
+        (0, "On resumes the lamp's stored schedule"),
+        (1, "On restores the saved nonzero Manual mix"),
+    ),
+)
+async def test_http_off_publishes_confirmed_saved_origin_without_poll_or_reload(
+    hass, hass_client, power_entry, origin, expected_reason
+):
+    """Exercise real HA service/state HTTP views and the actual loopback client."""
+    lamp, entry = power_entry
+    lamp.mode = origin
+    await entry.runtime_data.async_refresh()
+
+    def clear_off(frame, response):
+        if frame == protocol.mode_frame(8):
+            lamp.channels = (0,) * 6
+        return response
+
+    lamp.response_override = clear_off
+    assert await async_setup_component(hass, "api", {})
+    client = await hass_client()
+    light_id = entity_id(hass, entry, "light", "power")
+    response = await client.post("/api/services/light/turn_off", json={"entity_id": light_id})
+    assert response.status == 200
+    # Confirm the origin was durably accepted internally, then independently
+    # read the state HA's actual REST endpoint exposes without another refresh.
+    assert (
+        entry.runtime_data.power_memory.manual_restore(entry.runtime_data.data)[1]
+        == expected_reason
+    )
+    observed = await client.get(f"/api/states/{light_id}")
+    assert observed.status == 200
+    state = await observed.json()
+    assert state["state"] == "off"
+    assert state["attributes"]["on_behavior"] == expected_reason
+    assert lamp.writes == [protocol.mode_frame(8)]
+    response = await client.post("/api/services/light/turn_on", json={"entity_id": light_id})
+    assert response.status == 200
+    observed = await client.get(f"/api/states/{light_id}")
+    assert observed.status == 200
+    state = await observed.json()
+    assert state["state"] == "on"
+    assert state["attributes"]["on_behavior"] == NO_MANUAL_STATE
+
+
+async def test_resume_from_retained_off_publishes_invalidated_origin(hass, power_entry):
+    lamp, entry = power_entry
+    await power(hass, entry, "turn_off")
+    button = entity_id(hass, entry, "button", "resume_schedule")
+    await hass.services.async_call("button", "press", {"entity_id": button}, blocking=True)
+    state = hass.states.get(entity_id(hass, entry, "light", "power"))
+    assert state.state == "on"
+    assert state.attributes["on_behavior"] == NO_MANUAL_STATE
+    assert lamp.writes == [protocol.mode_frame(8), protocol.mode_frame(0)]
+
+
+async def test_failed_off_confirmation_save_publishes_known_off_with_fallback(hass, power_entry):
+    lamp, entry = power_entry
+    memory = entry.runtime_data.power_memory
+    original = memory._writer.async_save
+
+    async def fail_confirmation(data):
+        if data["off_origin"] is not None and data["off_origin"]["confirmed"]:
+            raise OSError("synthetic durable confirmation failure")
+        await original(data)
+
+    with patch.object(memory._writer, "async_save", fail_confirmation):
+        with pytest.raises(HomeAssistantError, match="Off was confirmed"):
+            await power(hass, entry, "turn_off")
+    state = hass.states.get(entity_id(hass, entry, "light", "power"))
+    assert state.state == "off"
+    assert state.attributes["on_behavior"] == NO_MANUAL_STATE
+    assert memory.error
+    assert lamp.writes == [protocol.mode_frame(8)]
+
+
+async def test_cancelled_off_confirmation_settles_then_requires_read_without_replay(
+    hass, power_entry
+):
+    lamp, entry = power_entry
+    coordinator = entry.runtime_data
+    memory = coordinator.power_memory
+    original = memory._writer.async_save
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def delayed_confirmation(data):
+        if data["off_origin"] is not None and data["off_origin"]["confirmed"]:
+            started.set()
+            await release.wait()
+        await original(data)
+
+    with patch.object(memory._writer, "async_save", delayed_confirmation):
+        task = asyncio.create_task(coordinator.async_turn_off())
+        try:
+            await started.wait()
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+        finally:
+            release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    assert coordinator.data.system.mode_raw == 8
+    light_id = entity_id(hass, entry, "light", "power")
+    assert hass.states.get(light_id).state == "unavailable"
+    assert lamp.writes == [protocol.mode_frame(8)]
+    await coordinator.async_refresh()
+    assert hass.states.get(light_id).state == "off"
+    assert hass.states.get(light_id).attributes["on_behavior"] == NO_MANUAL_STATE
+    assert lamp.writes == [protocol.mode_frame(8)]
 
 
 @pytest.mark.parametrize("zero_on_off", (False, True))

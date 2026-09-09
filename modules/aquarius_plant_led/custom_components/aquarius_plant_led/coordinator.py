@@ -67,6 +67,15 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
             # before Off, and missing Manual memory falls back to the schedule.
             _LOGGER.warning("Aquarius power memory could not be saved")
 
+    async def _publish_observation(self, state: DeviceState) -> None:
+        """Publish device readback and its memory-dependent attributes together."""
+        try:
+            await self._remember_observation(state)
+        finally:
+            # Persistence failure does not erase confirmed physical readback.
+            # The enclosing command window marks cancelled actions unavailable.
+            self.async_set_updated_data(state)
+
     def _read_failed(self) -> None:
         # Recovery permits new user actions, never actions queued before a fault.
         self._command_epoch += 1
@@ -202,8 +211,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                         "Wait for a successful read before making another change."
                     ) from None
                 self._read_succeeded()
-                self.async_set_updated_data(state)
-                await self._remember_observation(state)
+                await self._publish_observation(state)
 
     async def async_set_mode(self, option: str) -> None:
         """Change mode only for an explicit select action, never during setup."""
@@ -233,8 +241,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                         "Wait for a successful read before making another change."
                     ) from None
                 self._read_succeeded()
-                self.async_set_updated_data(state)
-                await self._remember_observation(state)
+                await self._publish_observation(state)
 
     async def async_turn_off(self) -> None:
         """Persist fresh origin before a single explicit software Off command."""
@@ -274,7 +281,6 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                         "Off was not confirmed. No command was retried"
                     ) from None
                 self._read_succeeded()
-                self.async_set_updated_data(state)
                 try:
                     await self.power_memory.async_confirm_off(state)
                 except PowerMemoryError:
@@ -282,6 +288,10 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                         "Off was confirmed but its return state could not be saved. "
                         "On will resume the lamp's stored schedule."
                     ) from None
+                finally:
+                    # Light attributes must observe confirmed memory, not the
+                    # pending intent. Equal-state polls may not notify again.
+                    self.async_set_updated_data(state)
 
     async def async_turn_on(self, *, resume_schedule: bool = False) -> None:
         """Restore remembered Manual output or explicitly resume the stored schedule."""
@@ -311,8 +321,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
                         "On was not confirmed. No command was retried"
                     ) from None
                 self._read_succeeded()
-                self.async_set_updated_data(state)
-                await self._remember_observation(state)
+                await self._publish_observation(state)
 
     async def async_prepare_unload(self) -> None:
         """Stop accepting commands before native platform unloading can yield."""

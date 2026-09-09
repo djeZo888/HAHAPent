@@ -28,7 +28,12 @@ before new experiment types. Initial optical samples change one channel by at
 most five percentage points at a modest output (initial ceiling 20%), within
 ten seconds including confirmed cleanup. Hold time must retain the existing
 early recovery reserve. Software shutdown is a separately authorized bounded
-mode test preserving the observed starting mode. The observed Manual baseline
+mode test preserving the observed starting mode. After its actual zero-state
+validation, a separately reviewed optical procedure may use Shutdown, confirmed
+Manual zero, one selected channel at 1–5% for at most 0.3 seconds, and deliberate
+exact original Manual restoration. Its four-second experiment phase reserves
+5.5 seconds for cleanup within the same ten-second total limit; phase-specific
+ownership guards prohibit overwriting competing changes. The observed Manual baseline
 requires Manual-first recovery: confirm mode 1 and original output; only observed
 Shutdown-zero followed by independently confirmed Manual-zero and a fresh exact
 guard may admit one deliberate saved-vector restoration. A retained Off vector
@@ -37,6 +42,14 @@ recovery sends only Automatic. Validate readback before enabling a shutdown prof
 competing changes. Stop further experiments after a failure until confirmed
 recovery and a repaired/reviewed procedure permit another attempt.
 
+The first native Automatic-origin composite failed its HA saved-origin display
+check after Off; guarded recovery and three fresh reads confirmed exact original
+Manual restoration. Lamp writes are paused while the reproduced entity-publication
+ordering bug is repaired and reviewed for a new immutable module version. Do not
+weaken the origin check or replace the published 0.3.0 tag/assets. Safe read-only
+investigation, backups and no-output-write lifecycle work continue. Corrected
+bounded revalidation remains authorized after offline repair and review pass.
+
 No setup, startup, polling, reload or reconnect path may write lamp state.
 Only explicit actions may switch power or restore a saved mix. Unknown saved
 origin falls back to the lamp's existing schedule on explicit On; never invent
@@ -44,6 +57,15 @@ full-brightness channel values. Keep runtime memory versioned and profile-bound.
 Do not upload/edit schedules, presets, effects or clock settings; do not operate
 Shelly, KNX, other devices, production, provisioning, firmware or factory reset.
 Do not change network/security/camera settings or global Recorder settings.
+For Task 004's required Automatic-origin native power acceptance, a separate
+composite may begin from the owner's Manual snapshot, invoke Resume schedule,
+Off and On, then deliberately restore that exact Manual snapshot. Its explicit
+maximum is twenty seconds, with a six-second experiment and a 19.5-second
+cleanup deadline. This bounded mode/power procedure is within the current
+Task 004 authorization, which does not specify a numerical composite duration;
+it does not extend the ten-second optical or single-action tests. Require
+separate offline tests and independent review before execution. Unknown HA
+completion never permits replay, even with the larger cleanup reserve.
 A failing experiment does not stop safe investigation or independent task work.
 Do not regenerate credentials. License selection remains pending.
 
