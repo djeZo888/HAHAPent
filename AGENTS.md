@@ -28,7 +28,12 @@ before new experiment types. Initial optical samples change one channel by at
 most five percentage points at a modest output (initial ceiling 20%), within
 ten seconds including confirmed cleanup. Hold time must retain the existing
 early recovery reserve. Software shutdown is a separately authorized bounded
-mode test preserving the observed starting mode. The observed Manual baseline
+mode test preserving the observed starting mode. After its actual zero-state
+validation, a separately reviewed optical procedure may use Shutdown, confirmed
+Manual zero, one selected channel at 1–5% for at most 0.3 seconds, and deliberate
+exact original Manual restoration. Its four-second experiment phase reserves
+5.5 seconds for cleanup within the same ten-second total limit; phase-specific
+ownership guards prohibit overwriting competing changes. The observed Manual baseline
 requires Manual-first recovery: confirm mode 1 and original output; only observed
 Shutdown-zero followed by independently confirmed Manual-zero and a fresh exact
 guard may admit one deliberate saved-vector restoration. A retained Off vector
