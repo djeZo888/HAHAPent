@@ -30,7 +30,12 @@ async def test_native_device_six_sliders_diagnostics_and_readonly_lifecycle(
     assert devices[0].sw_version is None
     assert devices[0].serial_number is None
     for index, channel in enumerate("abcdef"):
-        state = hass.states.get(entity_id(hass, loaded_entry, "number", f"channel_{channel}"))
+        number_id = entity_id(hass, loaded_entry, "number", f"channel_{channel}")
+        assert number_id == f"number.aquarius_plant_led_channel_{channel}"
+        number_entry = er.async_get(hass).async_get(number_id)
+        assert number_entry.original_name == f"Channel {channel.upper()}"
+        assert number_entry.has_entity_name is True
+        state = hass.states.get(number_id)
         assert float(state.state) == observed_state.channels[index]
         assert state.attributes["min"] == 0
         assert state.attributes["max"] == 100

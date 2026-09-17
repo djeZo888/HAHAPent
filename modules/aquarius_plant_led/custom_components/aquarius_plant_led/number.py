@@ -39,9 +39,7 @@ class AquariusChannel(AquariusEntity, NumberEntity):
         super().__init__(coordinator, f"channel_{CHANNEL_LABELS[index].lower()}")
         self._index = index
         label = channel_labels_from_options(coordinator.config_entry.options)[CHANNEL_KEYS[index]]
-        self._attr_name = (
-            label if label == f"Channel {CHANNEL_LABELS[index]}" else f"{label} intensity"
-        )
+        self._attr_name = label
 
     @property
     def native_value(self) -> int:

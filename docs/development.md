@@ -435,3 +435,23 @@ actual timings. Browser/iPhone gestures remain NOT_TESTED, the red pair remains
 configurable and Automatic interpolation undetermined. Passive diagnostic capture
 does not prove native HA wire-level absence of writes. No full live restore was
 performed, and historical failures are preserved.
+
+## Compact channel labels follow-up (0.3.2)
+
+The September 17 visual update preserves the existing integration and controls.
+Number names use their configured label, and the six native Tile cards use
+`name: {type: entity}` in full-width rows. Actual browser clipping was reproduced
+before the fix. Read-only independent review found no issues.
+
+The full `tests/ha_aquarius` suite passed 117 tests on HA 2026.9.1 and another
+117 on 2026.9.2, both using Python 3.14.7 and blocked external sockets:
+
+```sh
+python -m pytest tests/ha_aquarius -q --disable-socket --allow-unix-socket --timeout=20 --tb=short
+```
+
+The second private test environment changes only the matching HA and fixture
+pins (2026.9.2 and 0.13.365); public CI retains the committed pinned environment.
+No new lamp-control validation is required for the naming-only runtime change.
+Publication, actual update and visual results are recorded in
+[Task 004](../tasks/004-aquarius-ux.md), separately from historical physical tests.

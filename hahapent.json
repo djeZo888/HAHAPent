@@ -195,6 +195,45 @@
         "touch_acceptance": "not_tested",
         "colour_mapping": "per_lamp_options_with_ambiguous_red_pair"
       }
+    },
+    {
+      "id": "aquarius-plant-led",
+      "name": "Aquarius Plant LED",
+      "description": "Compact configurable channel labels and native entity-only Tile names in full-width slider rows. Visual update candidate; prior 0.3.1 controls are unchanged. Final browser/update evidence will be recorded in Task 004.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.3.2/modules/aquarius_plant_led/README.md",
+      "integration_domain": "aquarius_plant_led",
+      "version": "0.3.2",
+      "minimum_manager_version": "0.1.2",
+      "required_features": [],
+      "home_assistant": {
+        "min_version": "2026.9.1",
+        "max_version_exclusive": "2026.9.3"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/aquarius-plant-led-v0.3.2/aquarius-plant-led-0.3.2.zip",
+        "sha256": "bbb635deca4380d9807c1cf3e513478ea61640f72db8342f0a8ae9a5402fc254",
+        "format": "zip"
+      },
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "010be57a40c648da573475555fc53b72b1a5e4d9",
+        "source_path": "modules/aquarius_plant_led"
+      },
+      "license": {
+        "status": "pending"
+      },
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "extensions": {
+        "release_status": "visual-update-candidate",
+        "hardware_controls": "unchanged_from_validated_0.3.1",
+        "live_ha_acceptance": "pending_visual_update",
+        "touch_acceptance": "not_tested",
+        "colour_mapping": "preserved_existing_options"
+      }
     }
   ],
   "minimum_manager_version": "0.1.0",

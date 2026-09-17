@@ -340,3 +340,42 @@ records completed actual acceptance. Earlier releases, including failed 0.3.0,
 remain intact. The [final delivery record, PR 13](https://github.com/djeZo888/HAHAPent/pull/13),
 uses the same completed-CI-before-merge gate. Its checks and merge commit are
 attached to that record and identified in the owner handoff.
+
+## September 17 follow-up: compact colour labels
+
+The owner requested shorter slider text on the existing dashboard, a new module
+release, GitHub publication, test-dev update and actual visual verification.
+Work starts from committed main `fc76f923ad12bd2b8dc064733d5ea923778f957f`
+on `task/004-aquarius-compact-labels`. Earlier Task 004 evidence above remains
+historical, including the completed lamp-control tests and their limits.
+
+The browser reproduced clipped colour labels: a channel title required 273 px
+inside an 82 px text area. Version 0.3.2 removes the redundant Number-name
+"intensity" suffix. The six native Number Tiles use dynamic entity-only names
+and full-width rows. Options and HA custom names remain authoritative; A–F
+unique IDs, existing entity IDs, other cards and control behavior are unchanged.
+The native naming feature is documented by
+[Home Assistant](https://www.home-assistant.io/dashboards/naming/#entity-name).
+
+Independent source review found no issues. Synthetic native HA suites passed
+**117 tests on 2026.9.1** and **117 tests on 2026.9.2**, with Python 3.14.7;
+the latter uses the matching fixture 0.13.365 in an isolated private environment.
+The repository's pinned test requirements and CI are unchanged. Both suites
+disable external network sockets. These are synthetic tests, not new physical
+control acceptance. Fresh startup/KNX review and encrypted backup creation,
+private download and isolated decryption/readability passed before deployment.
+Full live restoration is NOT_TESTED. Release/update and final visual results
+will be recorded after execution. This task sends no lamp-output commands.
+
+The [0.3.2 immutable candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.2)
+was built twice reproducibly from source
+`010be57a40c648da573475555fc53b72b1a5e4d9`. Its ZIP SHA-256 is
+`bbb635deca4380d9807c1cf3e513478ea61640f72db8342f0a8ae9a5402fc254`.
+All four uploaded assets were downloaded without authentication and matched the
+local bytes; the release tag resolves to the source commit. The 12 module-builder
+tests, Ruff, catalog/bundle checks and staged/outgoing privacy checks passed.
+[Source CI](https://github.com/djeZo888/HAHAPent/actions/runs/35219645736)
+completed successfully, including both synthetic unit-test jobs, native HA
+fixtures and the isolated App runtime checks. The catalog admits tested HA
+2026.9.1 and 2026.9.2 for 0.3.2; all earlier entries remain unchanged. The
+Manager bootstrap catalog copy is synchronized without rebuilding the App.
