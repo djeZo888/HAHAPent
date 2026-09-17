@@ -235,6 +235,45 @@
         "colour_mapping": "preserved_existing_options",
         "browser_labels": "desktop_and_390px_all_six_fit"
       }
+    },
+    {
+      "id": "aquarius-plant-led",
+      "name": "Aquarius Plant LED",
+      "description": "Optional native approximate colour picker and zero-to-100 intensity, with explicit independent channel roles and preserved detailed controls. Candidate pending actual test-dev acceptance.",
+      "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.4.0/modules/aquarius_plant_led/README.md",
+      "integration_domain": "aquarius_plant_led",
+      "version": "0.4.0",
+      "minimum_manager_version": "0.1.2",
+      "required_features": [],
+      "home_assistant": {
+        "min_version": "2026.9.1",
+        "max_version_exclusive": "2026.9.3"
+      },
+      "dependencies": [],
+      "artifact": {
+        "url": "https://github.com/djeZo888/HAHAPent/releases/download/aquarius-plant-led-v0.4.0/aquarius-plant-led-0.4.0.zip",
+        "sha256": "ba04d57b39892974c3976af766ac1714225e688239c681ab797e9286df7dc742",
+        "format": "zip"
+      },
+      "provenance": {
+        "repository_url": "https://github.com/djeZo888/HAHAPent",
+        "revision": "d24d1d2b9a024cfc53abd50ba16bcd8fd2593f6b",
+        "source_path": "modules/aquarius_plant_led"
+      },
+      "license": {
+        "status": "pending"
+      },
+      "restart": {
+        "home_assistant": "required",
+        "manager": "not_required"
+      },
+      "extensions": {
+        "release_status": "compact-control-candidate",
+        "live_ha_acceptance": "pending_compact_validation",
+        "touch_acceptance": "not_tested",
+        "colour_representation": "approximate_explicit_channel_roles",
+        "detailed_controls": "preserved"
+      }
     }
   ],
   "minimum_manager_version": "0.1.0",

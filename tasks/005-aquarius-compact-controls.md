@@ -88,5 +88,20 @@ passed 37 failure/loopback tests. The pure mixer has 33 passing tests, including
 all integer intensity values, rounding, duplicate/unused roles, invalid options
 and approximate display behavior. No colour claim is based on simulation.
 
-Publication, test-dev installation, bounded lamp tests and final browser/lifecycle
-acceptance remain **NOT_TESTED** at this source checkpoint.
+At the source checkpoint, publication and actual acceptance remained NOT_TESTED.
+
+## Immutable publication
+
+Source commit `d24d1d2b9a024cfc53abd50ba16bcd8fd2593f6b` passed completed hosted
+CI run `35224973791`, including Python 3.9/3.13 unit jobs, native HA tests and the
+device-free App runtime job. Two builds of that committed tree produced the same
+17-file ZIP, SHA-256
+`ba04d57b39892974c3976af766ac1714225e688239c681ab797e9286df7dc742`.
+The immutable [0.4.0 candidate release](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.4.0)
+contains the ZIP, one-row catalog, artifact metadata and checksums. All four public
+unauthenticated downloads matched local bytes, and the tag resolves to the exact
+source commit. The canonical and bundled catalogs append 0.4.0 without changing
+prior releases. Catalog validation and bundle consistency pass.
+
+Test-dev installation, bounded lamp tests and final browser/lifecycle acceptance
+remain **NOT_TESTED** at this publication checkpoint.
