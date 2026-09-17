@@ -758,5 +758,320 @@ class AquariusClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.lamp.writes, [])
 
 
+class CompactClientTests(unittest.IsolatedAsyncioTestCase):
+    """The new compact path uses the real client and fictional loopback device."""
+
+    asyncSetUp = AquariusClientTests.asyncSetUp
+    asyncTearDown = AquariusClientTests.asyncTearDown
+    roles = ("red", "green", "blue", "red", "white", "unused")
+
+    async def compact(self, **kwargs):
+        return await self.client.set_compact(channel_roles=self.roles, **kwargs)
+
+    async def test_recipe_one_vector_manual_and_fresh_readback_in_both_wire_orders(self):
+        for controller in ((0x12, 0x3C), (0x14, 0x32)):
+            self.lamp.controller = controller
+            self.lamp.echo_writes = True
+            self.lamp.fragment = True
+            await self.client.refresh()
+            self.lamp.observed.clear()
+            state = await self.compact(rgb_color=(255, 128, 0), intensity=20)
+            self.assertEqual(state.channels, (20, 10, 0, 20, 0, 0))
+            self.assertEqual(state.system.mode_raw, 1)
+            self.assertEqual(
+                self.lamp.writes,
+                [
+                    protocol.channel_write_frame(
+                        state.channels, swap_cd=controller == (0x14, 0x32)
+                    ),
+                    protocol.mode_frame(1),
+                ],
+            )
+            writes = [item for item in self.lamp.observed if item[1][2] == 0xFA]
+            self.assertGreaterEqual(writes[1][2] - writes[0][2], 0.09)
+            self.assertNotEqual(writes[-1][0], self.lamp.observed[-1][0])
+
+    async def test_brightness_uses_fresh_automatic_all_six_channel_mix(self):
+        self.lamp.mode = 0
+        observed = await self.client.refresh()
+        self.lamp.channels = (6, 12, 18, 24, 30, 60)
+        state = await self.compact(intensity=30, expected_state=observed)
+        self.assertEqual(state.channels, (3, 6, 9, 12, 15, 30))
+        self.assertEqual(len(self.lamp.writes), 2)
+
+    async def test_colour_only_uses_fresh_peak_and_raw_rgb_amplitude_once(self):
+        self.lamp.mode = 0
+        await self.client.refresh()
+        self.lamp.channels = (0, 0, 0, 0, 0, 40)
+        state = await self.compact(rgb_color=(128, 0, 0))
+        self.assertEqual(state.channels, (20, 0, 0, 20, 0, 0))
+
+    async def test_zero_basis_colour_has_modest_default_brightness_only_has_no_write(self):
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+        await self.client.refresh()
+        with self.assertRaisesRegex(client.CompactInputError, "Choose a colour first"):
+            await self.compact(intensity=20)
+        self.assertEqual(self.lamp.writes, [])
+        self.assertEqual(self.client.last_state.channels, (0,) * 6)
+        self.assertFalse(self.client._needs_refresh)
+        state = await self.compact(rgb_color=(255, 0, 0))
+        self.assertEqual(state.channels, (5, 0, 0, 5, 0, 0))
+
+    async def test_invalid_compact_inputs_never_connect(self):
+        for kwargs in (
+            {},
+            {"rgb_color": (True, 0, 0)},
+            {"rgb_color": (256, 0, 0)},
+            {"intensity": 1.0},
+            {"intensity": 101},
+            {"intensity": 0},
+            {"rgb_color": (0, 0, 0)},
+            {"manual_channels": (0,) * 6, "intensity": 1},
+        ):
+            with self.subTest(kwargs=kwargs), self.assertRaises(protocol.ProtocolError):
+                await self.compact(**kwargs)
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.set_compact(intensity=10, channel_roles=("red",) * 6)
+        self.assertEqual(self.lamp.connections, 0)
+
+    async def test_manual_competitor_or_unverified_profile_prevents_recipe(self):
+        observed = await self.client.refresh()
+        self.lamp.channels = (11, 20, 30, 40, 50, 60)
+        with self.assertRaises(client.ConflictError):
+            await self.compact(intensity=10, expected_state=observed)
+        self.lamp.version = (7, 8)
+        await self.client.refresh()
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.compact(intensity=10)
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_off_new_colour_wakes_guards_then_writes_one_vector(self):
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            for exposed in ((0,) * 6, (1, 2, 3, 4, 5, 6)):
+                self.lamp.mode = 8
+                self.lamp.channels = exposed
+                self.lamp.channel_operation = 0xFA
+                await self.client.refresh()
+                self.lamp.observed.clear()
+                state = await self.compact(rgb_color=(0, 0, 255), intensity=7)
+                self.assertEqual(state.channels, (0, 0, 7, 0, 0, 0))
+                self.assertEqual(
+                    self.lamp.writes,
+                    [
+                        protocol.mode_frame(1),
+                        protocol.channel_write_frame(state.channels),
+                        protocol.mode_frame(1),
+                    ],
+                )
+                # Off read, independent awake read, extra fresh guarded read,
+                # independent target read, in four separate connections.
+                channel_reads = [
+                    event[0] for event in self.lamp.observed if event[1] == protocol.CHANNEL_QUERY
+                ]
+                self.assertEqual(len(set(channel_reads)), 4)
+
+    async def test_off_brightness_requires_trusted_basis_and_uses_it_only_as_new_target(self):
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            self.lamp.mode = 8
+            self.lamp.channels = (0,) * 6
+            self.lamp.channel_operation = 0xFA
+            await self.client.refresh()
+            with self.assertRaises(client.CompactInputError):
+                await self.compact(intensity=20)
+            self.assertEqual(self.lamp.writes, [])
+            await self.client.refresh()
+            state = await self.compact(intensity=20, manual_channels=(5, 10, 15, 20, 25, 50))
+            self.assertEqual(state.channels, (2, 4, 6, 8, 10, 20))
+
+    async def test_retained_off_bytes_are_not_a_colour_only_brightness_basis(self):
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            for saved, expected_peak in ((None, 5), ((10, 20, 0, 0, 0, 0), 20)):
+                self.lamp.mode = 8
+                self.lamp.channels = (90,) * 6
+                await self.client.refresh()
+                state = await self.compact(rgb_color=(255, 0, 0), manual_channels=saved)
+                self.assertEqual(max(state.channels), expected_peak)
+
+    async def test_off_missing_power_gate_or_changed_off_state_has_no_wake(self):
+        self.lamp.mode = 8
+        observed = await self.client.refresh()
+        with self.assertRaises(client.UnsupportedDeviceError):
+            await self.compact(rgb_color=(255, 0, 0), intensity=10)
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            self.lamp.channels = (1,) * 6
+            with self.assertRaises(client.ConflictError):
+                await self.compact(intensity=10, expected_state=observed)
+        self.assertEqual(self.lamp.writes, [])
+
+    async def test_contradictory_wake_stops_before_any_channel_write(self):
+        self.lamp.mode = 8
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+
+        def compete(frame, response):
+            if frame == protocol.mode_frame(1):
+                self.lamp.channels = (9,) * 6
+            return response
+
+        self.lamp.response_override = compete
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            with self.assertRaises(client.ConflictError):
+                await self.compact(rgb_color=(255, 0, 0), intensity=10)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(1)])
+
+    async def test_competitor_after_confirmed_wake_fails_additional_exact_guard(self):
+        self.lamp.mode = 8
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+
+        async def compete(connection, frame):
+            if connection == 4 and frame == protocol.SYSTEM_QUERY:
+                self.lamp.channels = (2,) * 6
+
+        self.lamp.hook = compete
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            with self.assertRaises(client.ConflictError):
+                await self.compact(rgb_color=(255, 0, 0), intensity=10)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(1)])
+
+    async def test_lost_wake_confirmation_never_sends_vector_or_retries(self):
+        self.lamp.mode = 8
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+
+        def drop(frame, response):
+            if self.lamp.connections == 3 and frame == protocol.CHANNEL_QUERY:
+                return None
+            return response
+
+        self.lamp.response_override = drop
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            with self.assertRaises(client.AquariusError):
+                await self.compact(rgb_color=(255, 0, 0), intensity=10)
+            with self.assertRaises(client.RefreshRequiredError):
+                await self.compact(rgb_color=(255, 0, 0), intensity=10)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(1)])
+
+    async def test_write_echo_does_not_confirm_compact_target(self):
+        await self.client.refresh()
+        self.lamp.ignore_writes = True
+        self.lamp.echo_writes = True
+        with self.assertRaises(client.ConflictError):
+            await self.compact(rgb_color=(255, 0, 0), intensity=10)
+        self.assertEqual(len(self.lamp.writes), 2)
+        self.assertIsNone(self.client.last_state)
+
+    async def test_cancel_after_channel_send_does_not_save_retry_or_restore(self):
+        await self.client.refresh()
+        sent = asyncio.Event()
+
+        async def detect(_connection, frame):
+            if frame[1:3] == b"\xe2\xfa":
+                sent.set()
+
+        self.lamp.hook = detect
+        task = asyncio.create_task(self.compact(rgb_color=(255, 0, 0), intensity=10))
+        await sent.wait()
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await task
+        self.assertEqual(len(self.lamp.writes), 1)
+        self.assertIsNone(self.client.last_state)
+
+    async def test_swallowed_inner_cancellation_still_revokes_next_send(self):
+        await self.client.refresh()
+        blocked = asyncio.Event()
+        quarantine = self.client._quarantine
+
+        async def swallow(duration, echoes=()):
+            if duration == client.MANUAL_SAVE_DELAY:
+                blocked.set()
+                try:
+                    await asyncio.Future()
+                except asyncio.CancelledError:
+                    # Deterministic model of Python 3.9 wait_for's completion
+                    # race: an inner awaitable swallows the cancellation.
+                    return
+            await quarantine(duration, echoes)
+
+        loop = asyncio.get_running_loop()
+        handler = loop.get_exception_handler()
+        loop_errors = []
+        loop.set_exception_handler(lambda _loop, context: loop_errors.append(context))
+        try:
+            with patch.object(self.client, "_quarantine", swallow):
+                task = asyncio.create_task(self.compact(rgb_color=(255, 0, 0), intensity=10))
+                await blocked.wait()
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+                await asyncio.sleep(0)
+                self.assertEqual(loop_errors, [])
+        finally:
+            loop.set_exception_handler(handler)
+        self.assertEqual(len(self.lamp.writes), 1)
+        self.assertIsNone(self.client._active_task)
+        self.assertIsNone(self.client._writer)
+        with self.assertRaises(client.RefreshRequiredError):
+            await self.compact(intensity=10)
+
+    async def test_no_basis_revokes_old_queued_requests_without_losing_fresh_state(self):
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+        await self.client.refresh()
+        first = asyncio.create_task(self.compact(intensity=20))
+        await asyncio.sleep(0)
+        old_colour = asyncio.create_task(self.compact(rgb_color=(255, 0, 0)))
+        outcomes = await asyncio.gather(first, old_colour, return_exceptions=True)
+        self.assertIsInstance(outcomes[0], client.CompactInputError)
+        self.assertIsInstance(outcomes[1], client.RefreshRequiredError)
+        self.assertEqual(self.lamp.writes, [])
+        self.assertEqual(self.client.last_state.channels, (0,) * 6)
+        changed = await self.compact(rgb_color=(0, 255, 0), intensity=10)
+        self.assertEqual(changed.channels, (0, 10, 0, 0, 0, 0))
+
+    async def test_wake_profile_change_forbids_vector(self):
+        self.lamp.mode = 8
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+
+        def change(frame, response):
+            if frame == protocol.mode_frame(1):
+                self.lamp.version = (2, 6)
+            return response
+
+        self.lamp.response_override = change
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            with self.assertRaises(client.ConflictError):
+                await self.compact(rgb_color=(255, 0, 0), intensity=10)
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(1)])
+
+    async def test_cancel_after_wake_never_sends_requested_vector(self):
+        self.lamp.mode = 8
+        self.lamp.channels = (0,) * 6
+        self.lamp.channel_operation = 0xFA
+        seen = asyncio.Event()
+
+        async def detect(_connection, frame):
+            if frame == protocol.mode_frame(1):
+                seen.set()
+
+        self.lamp.hook = detect
+        with patch.object(protocol, "VERIFIED_SHUTDOWN_PROFILES", SYNTHETIC_PROFILES):
+            await self.client.refresh()
+            task = asyncio.create_task(self.compact(rgb_color=(255, 0, 0), intensity=10))
+            await seen.wait()
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await task
+        self.assertEqual(self.lamp.writes, [protocol.mode_frame(1)])
+
+
 if __name__ == "__main__":
     unittest.main()

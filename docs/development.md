@@ -466,3 +466,25 @@ and 390-pixel responsive width; iPhone touch remains NOT_TESTED. No lamp-output
 command was sent. Public release bytes and all historical assets remain intact;
 only release/catalog acceptance metadata was promoted. Main CI for catalog
 publication passed; the final delivery record uses the same completed-CI merge gate.
+
+## Optional compact colour controls (Task 005, 0.4.0)
+
+The owner's next request adds a native colour picker and literal 0–100% Intensity
+while retaining the detailed view. Work begins from delivered 0.3.2 without a
+second integration, Manager rebuild or changed historical release. See
+[Task 005](../tasks/005-aquarius-compact-controls.md), the
+[runtime review](aquarius-compact-runtime-review.md), and the
+[detached worker review](aquarius-compact-worker-review.md) for design and gates.
+
+Roles are explicit, versioned options independent of display labels. RGB is an
+approximation; intensity-only scales the actual six-channel mix. Zero uses
+durable software Off. Background paths remain query-only. The compact dashboard
+uses native More-info and a Number Tile; iPhone touch requires separate evidence.
+
+Synthetic tests and code review precede the immutable release and actual update.
+The new worker begins from fresh low Automatic output, uses guarded native
+actions and Automatic-only recovery, and never restores an old Manual snapshot.
+Only the coordinator executes it on the existing HA-side runtime. A fresh
+encrypted backup, private download and isolated content decryption/readability
+have passed; a live full restore is NOT_TESTED. Actual deployment and lamp
+acceptance are pending at this checkpoint.

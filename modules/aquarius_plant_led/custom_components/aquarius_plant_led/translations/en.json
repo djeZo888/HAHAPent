@@ -67,11 +67,23 @@
       "power": {
         "name": "Lamp"
       }
+    },
+    "number": {
+      "intensity": {
+        "name": "Intensity"
+      }
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Lamp options",
+        "menu_options": {
+          "labels": "Channel display labels",
+          "compact": "Compact colour and intensity"
+        }
+      },
+      "labels": {
         "title": "Channel colour labels",
         "description": "Name each channel after identifying its colour on this lamp. Keep the Channel A–F labels wherever the mapping is unknown. Labels must be distinct plain text, at most 40 characters. This changes display names only; it does not change the lamp output or entity IDs. Names you customized in Home Assistant take precedence.",
         "data": {
@@ -82,15 +94,41 @@
           "channel_e": "Channel E label",
           "channel_f": "Channel F label"
         }
+      },
+      "compact": {
+        "title": "Compact colour and intensity",
+        "description": "Enable an approximate colour picker by assigning physical roles to this lamp’s channels. Include red, green and blue; white is optional. Channels with the same role receive equal levels. Unused channels become zero when a colour is selected. Labels do not determine roles. Colour and intensity changes select Manual override; zero turns Off. Colour-only starts at the current or saved Manual intensity, or 5% when neither is available. Saving these options only reads the lamp.",
+        "data": {
+          "enabled": "Enable compact controls",
+          "channel_a": "Channel A role",
+          "channel_b": "Channel B role",
+          "channel_c": "Channel C role",
+          "channel_d": "Channel D role",
+          "channel_e": "Channel E role",
+          "channel_f": "Channel F role"
+        }
       }
     },
     "error": {
       "invalid_labels": "Provide one label for each of the six channels.",
       "invalid_label": "Enter 1–40 characters of plain text without markup or control characters.",
-      "duplicate_label": "Give each channel a distinct label; upper and lower case do not distinguish labels."
+      "duplicate_label": "Give each channel a distinct label; upper and lower case do not distinguish labels.",
+      "invalid_roles": "Assign a role to every channel, including at least one red, one green and one blue."
     },
     "abort": {
-      "unsupported_label_version": "These labels were saved by a newer integration version. Update the integration before editing them."
+      "unsupported_label_version": "These labels were saved by a newer integration version. Update the integration before editing them.",
+      "unsupported_role_version": "These colour roles were saved by a newer integration version. Update the integration before editing them."
+    }
+  },
+  "selector": {
+    "channel_role": {
+      "options": {
+        "unused": "Unused by colour picker",
+        "red": "Red family",
+        "green": "Green",
+        "blue": "Blue",
+        "white": "White"
+      }
     }
   }
 }

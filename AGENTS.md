@@ -2,6 +2,17 @@
 
 ## Current scope
 
+The owner subsequently authorized implementing optional compact native colour
+and 0–100% intensity controls while preserving the detailed six-channel view.
+Task 005 is in progress in `tasks/005-aquarius-compact-controls.md`, targeting
+module 0.4.0 from delivered 0.3.2. Use its explicit semantic-role mapping, preserve
+existing Light/channel identities and power-origin behavior, and keep all
+background paths read-only. Only the coordinator performs live operations.
+New bounded physical validation requires passing offline failure tests and
+independent documented review of both the runtime and new detached worker.
+Its current-mode guard and Automatic-only recovery must never restore a Task 004
+snapshot. Preserve 0.3.2 until the new version passes the full delivery gates.
+
 Tasks 001–003 are complete. Task 003's final committed baseline is
 `cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24`; its Manager 0.1.2 and Aquarius Plant
 LED 0.2.0 native controls, lifecycle, startup and independence evidence remain

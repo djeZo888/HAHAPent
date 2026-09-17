@@ -11,6 +11,14 @@ import math
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
+from .compact import (
+    mix_rgb,
+    peak_intensity,
+    scale_channels,
+    validate_intensity,
+    validate_rgb,
+    validate_roles,
+)
 from .protocol import (
     CHANNEL_QUERY,
     MODE_AUTOMATIC,
@@ -49,6 +57,14 @@ class UnsupportedDeviceError(AquariusError):
 
 class RefreshRequiredError(AquariusError):
     """Read current device state before a new explicit command can be attempted."""
+
+
+class CompactInputError(ProtocolError):
+    """A fresh read found no safe basis for the requested compact output."""
+
+    def __init__(self, message: str, state: DeviceState) -> None:
+        super().__init__(message)
+        self.state = state
 
 
 @dataclass(frozen=True)
@@ -91,6 +107,7 @@ class AquariusClient:
         self._closed = False
         self._needs_refresh = True
         self._epoch = 0
+        self._operation_epoch: Optional[int] = None
         self._last_state: Optional[DeviceState] = None
 
     @property
@@ -146,6 +163,87 @@ class AquariusClient:
             # Automatic can legitimately change output percentages.
             if mode == MODE_MANUAL and after.channels != before.channels:
                 raise ConflictError("channels changed unexpectedly while selecting Manual")
+            return after
+
+        return await self._execute(operation, write=True)
+
+    async def set_compact(
+        self,
+        *,
+        rgb_color=None,
+        intensity=None,
+        channel_roles,
+        manual_channels=None,
+        expected_state: Optional[DeviceState] = None,
+    ) -> DeviceState:
+        """Apply one explicit manual recipe, never an inferred power restoration.
+
+        Brightness-only changes scale the complete freshly observed spectrum.
+        The optional Off basis comes only from the coordinator's trusted power
+        memory; it is never treated as a new saved origin or replayed implicitly.
+        """
+        try:
+            roles = validate_roles(channel_roles)
+            rgb = None if rgb_color is None else validate_rgb(rgb_color)
+            level = None if intensity is None else validate_intensity(intensity)
+        except ValueError as error:
+            raise ProtocolError(str(error)) from None
+        if rgb is None and level is None:
+            raise ProtocolError("A colour or intensity is required")
+        if level == 0 or rgb == (0, 0, 0):
+            raise ProtocolError("Zero compact output requires the explicit power Off action")
+        if manual_channels is not None:
+            manual_channels = permute_channels(manual_channels)
+            if not any(manual_channels):
+                raise ProtocolError("The supplied Manual basis must be nonzero")
+
+        async def operation() -> DeviceState:
+            # Only Shutdown needs the separate power gate. Ordinary manual
+            # recipes retain the already validated channel-control profile gate.
+            previous = expected_state if expected_state is not None else self._last_state
+            waking = previous is not None and previous.system.mode_raw == MODE_SHUTDOWN
+            before = await self._prepare_write(expected_state, power=waking)
+            basis = manual_channels if waking else before.channels
+            if rgb is None:
+                if basis is None or not any(basis):
+                    raise CompactInputError(
+                        "Choose a colour first: no nonzero Manual mix is known", before
+                    )
+                desired = scale_channels(basis, level)
+            else:
+                chosen_level = level
+                if chosen_level is None:
+                    # Retained Shutdown bytes do not describe visible output or
+                    # a trusted prior choice. Only saved Manual origin may
+                    # supply its level; otherwise colour starts modestly.
+                    chosen_level = peak_intensity(basis) if basis is not None else 0
+                    chosen_level = chosen_level or 5
+                desired = mix_rgb(rgb, chosen_level, roles)
+            desired = permute_channels(desired)
+
+            if waking:
+                # Wake into a confirmed unchanged exposed vector, then guard
+                # again before applying this new user-selected target. Calling
+                # ordinary On here could briefly restore/resume a different mix.
+                manual = mode_frame(MODE_MANUAL)
+                await self._send(manual)
+                awake = await self._readback(before, MODE_MANUAL, (manual,))
+                self._verify_profile(before, awake)
+                if awake.system.mode_raw != MODE_MANUAL or awake.channels != before.channels:
+                    raise ConflictError("Manual wake contradicted the observed Off state")
+                await self._disconnect()
+                await self._connect()
+                before = await self._prepare_write(awake)
+
+            command = channel_write_frame(desired, swap_cd=before.system.swap_cd)
+            manual = mode_frame(MODE_MANUAL)
+            await self._send(command)
+            await self._quarantine(MANUAL_SAVE_DELAY, (command,))
+            await self._send(manual)
+            after = await self._readback(before, MODE_MANUAL, (command, manual))
+            self._verify_profile(before, after)
+            if after.system.mode_raw != MODE_MANUAL or after.channels != desired:
+                raise ConflictError("compact output was not independently confirmed")
             return after
 
         return await self._execute(operation, write=True)
@@ -244,13 +342,30 @@ class AquariusClient:
             if write and (self._needs_refresh or epoch != self._epoch):
                 raise RefreshRequiredError("refresh required before a new explicit command")
             self._active_task = asyncio.current_task()
+            self._operation_epoch = self._epoch
+            operation_task = asyncio.create_task(self._connected_operation(operation))
+            # A cancelled Python 3.14 shield reports exceptions from its inner
+            # task to the loop, even when another waiter retrieves them later.
+            # Shield a non-raising result envelope instead, then unwrap it.
+            operation_result = asyncio.gather(operation_task, return_exceptions=True)
             try:
-                state = await asyncio.wait_for(
-                    self._connected_operation(operation),
+                result = await asyncio.wait_for(
+                    asyncio.shield(operation_result),
                     timeout=self.timeout * 8 + MANUAL_SAVE_DELAY,
                 )
+                if isinstance(result[0], BaseException):
+                    raise result[0]
+                state = result[0]
             except asyncio.CancelledError:
                 self._invalidate()
+                raise
+            except CompactInputError as error:
+                # This error is emitted only after a complete fresh read and
+                # before any output command. Revoke older queued requests but
+                # retain that confirmed observation for a new explicit choice.
+                self._epoch += 1
+                self._last_state = error.state
+                self._needs_refresh = False
                 raise
             except (AquariusError, ProtocolError):
                 self._invalidate()
@@ -263,15 +378,38 @@ class AquariusClient:
                 ) from None
             finally:
                 try:
+                    # Invalidate above before cancellation reaches nested I/O:
+                    # Python 3.9 wait_for can swallow cancellation when its
+                    # inner awaitable completes concurrently. A revoked epoch
+                    # still prevents the next send in that operation.
+                    if not operation_task.done():
+                        operation_task.cancel()
+                    cancelled = await self._settle_operation(operation_task)
                     await self._disconnect()
+                    if cancelled:
+                        raise asyncio.CancelledError
                 except asyncio.CancelledError:
                     self._invalidate()
                     raise
                 finally:
                     self._active_task = None
+                    self._operation_epoch = None
             self._last_state = state
             self._needs_refresh = False
             return state
+
+    async def _settle_operation(self, task: asyncio.Task) -> bool:
+        """Do not release the transaction lock while cancelled I/O can continue."""
+        settled = asyncio.gather(task, return_exceptions=True)
+        cancelled = False
+        while not settled.done():
+            try:
+                await asyncio.shield(settled)
+            except asyncio.CancelledError:
+                cancelled = True
+                self._invalidate()
+                task.cancel()
+        return cancelled
 
     async def _connected_operation(
         self, operation: Callable[[], Awaitable[DeviceState]]
@@ -356,6 +494,8 @@ class AquariusClient:
                 pass
 
     async def _send(self, frame: bytes) -> None:
+        if self._operation_epoch is not None and self._operation_epoch != self._epoch:
+            raise RefreshRequiredError("cancelled transaction cannot send further commands")
         if self._writer is None or self._closed:
             raise AquariusError("connection is not available")
         self._writer.write(frame)

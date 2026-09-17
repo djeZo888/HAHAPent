@@ -10,7 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .client import AquariusClient, AquariusError, ConflictError, DeviceState
+from .client import AquariusClient, AquariusError, CompactInputError, ConflictError, DeviceState
+from .compact import compact_roles_from_options, validate_intensity, validate_rgb
 from .const import (
     CHANNEL_DEBOUNCE_SECONDS,
     DOMAIN,
@@ -50,6 +51,8 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         self._quiescing = False
         self._resuming = False
         self._channel_generations = [0] * 6
+        self._compact_generation = 0
+        self._pending_compact: tuple[tuple[int, int, int] | None, int | None] | None = None
         self._command_epoch = 0
         self._active_command: asyncio.Task | None = None
         self._active_read: asyncio.Task | None = None
@@ -79,6 +82,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
     def _read_failed(self) -> None:
         # Recovery permits new user actions, never actions queued before a fault.
         self._command_epoch += 1
+        self._invalidate_compact()
         self._failures += 1
         self.update_interval = timedelta(
             seconds=min(POLL_SECONDS * 2 ** min(self._failures, 4), MAX_BACKOFF_SECONDS)
@@ -147,6 +151,98 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         if epoch != self._command_epoch:
             raise HomeAssistantError("Controller communication changed; submit a new action")
 
+    def _invalidate_compact(self) -> None:
+        """Forget pending UI intent without cancelling an admitted transaction."""
+        self._compact_generation += 1
+        self._pending_compact = None
+
+    def _require_compact_request(self, epoch: int) -> None:
+        if self.data is not None and self.data.system.mode_raw == MODE_SHUTDOWN:
+            self._require_power_request(epoch)
+        else:
+            self._require_current_request(epoch)
+
+    async def async_set_compact(self, *, rgb_color=None, intensity=None) -> None:
+        """Coalesce pending compact gestures and apply a single confirmed mix."""
+        deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
+        try:
+            rgb = None if rgb_color is None else validate_rgb(rgb_color)
+            level = None if intensity is None else validate_intensity(intensity)
+        except ValueError as error:
+            raise ServiceValidationError(str(error)) from None
+        if rgb is None and level is None:
+            raise ServiceValidationError("A colour or intensity is required")
+        # Zero uses the established durable Off-origin path, never a zero vector
+        # that would discard the user's return state or pretend to be Shutdown.
+        if level == 0 or rgb == (0, 0, 0):
+            await self.async_turn_off()
+            return
+        roles = compact_roles_from_options(self.config_entry.options)
+        if roles is None:
+            raise ServiceValidationError("Configure the channel colour roles before using colour")
+        epoch = self._command_epoch
+        self._require_compact_request(epoch)
+        if self._pending_compact is not None:
+            pending_rgb, pending_level = self._pending_compact
+            rgb = pending_rgb if rgb is None else rgb
+            level = pending_level if level is None else level
+        intent = (rgb, level)
+        self._pending_compact = intent
+        self._compact_generation += 1
+        generation = self._compact_generation
+        self._channel_generations = [value + 1 for value in self._channel_generations]
+        try:
+            async with self._command_window(deadline):
+                await asyncio.sleep(CHANNEL_DEBOUNCE_SECONDS)
+                async with self._io_lock:
+                    self._check_command_deadline(deadline)
+                    self._require_compact_request(epoch)
+                    if generation != self._compact_generation:
+                        return
+                    if roles != compact_roles_from_options(self.config_entry.options):
+                        raise ServiceValidationError(
+                            "Channel roles changed; review them and submit a new action"
+                        )
+                    # Later gestures may run after this admitted transaction;
+                    # they must not cancel a partially transmitted manual save.
+                    self._pending_compact = None
+                    self._active_command = asyncio.current_task()
+                    manual, _reason = self.power_memory.manual_restore(self.data)
+                    try:
+                        state = await self.client.set_compact(
+                            rgb_color=intent[0],
+                            intensity=intent[1],
+                            channel_roles=roles,
+                            manual_channels=manual,
+                            expected_state=self.data,
+                        )
+                    except CompactInputError as error:
+                        # Fresh zero output is a known no-write input problem,
+                        # not lost communication. Discard queued intent while
+                        # allowing the user to choose a colour immediately.
+                        self._command_epoch += 1
+                        self._invalidate_compact()
+                        self._read_succeeded()
+                        await self._publish_observation(error.state)
+                        raise ServiceValidationError(
+                            "Choose a colour first: no nonzero Manual mix is known. "
+                            "No output command was sent."
+                        ) from None
+                    except (AquariusError, ProtocolError, OSError, TimeoutError):
+                        self._read_failed()
+                        self.async_set_update_error(
+                            UpdateFailed("Compact output was not confirmed")
+                        )
+                        raise HomeAssistantError(
+                            "The compact change was not confirmed. No command was retried. "
+                            "Wait for a successful read before another change."
+                        ) from None
+                    self._read_succeeded()
+                    await self._publish_observation(state)
+        finally:
+            if generation == self._compact_generation:
+                self._pending_compact = None
+
     @asynccontextmanager
     async def _command_window(self, deadline: float):
         """Expire the entire admitted action, including debounce and lock waits.
@@ -189,6 +285,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         if type(value) is not int or value not in range(101):
             raise ServiceValidationError("Channel level must be an integer from 0 to 100")
         self._require_write_supported()
+        self._invalidate_compact()
         epoch = self._command_epoch
         self._channel_generations[index] += 1
         generation = self._channel_generations[index]
@@ -219,6 +316,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         if option not in MODE_OPTIONS:
             raise ServiceValidationError("Unsupported operating mode")
         self._require_write_supported()
+        self._invalidate_compact()
         epoch = self._command_epoch
         # An explicit mode choice supersedes slider changes still being debounced.
         self._channel_generations = [value + 1 for value in self._channel_generations]
@@ -247,6 +345,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         """Persist fresh origin before a single explicit software Off command."""
         deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
         self._require_power_supported()
+        self._invalidate_compact()
         epoch = self._command_epoch
         self._channel_generations = [value + 1 for value in self._channel_generations]
         async with self._command_window(deadline):
@@ -301,6 +400,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
             return
         deadline = asyncio.get_running_loop().time() + EXPLICIT_COMMAND_TIMEOUT
         self._require_power_supported()
+        self._invalidate_compact()
         epoch = self._command_epoch
         self._channel_generations = [value + 1 for value in self._channel_generations]
         async with self._command_window(deadline):
@@ -327,6 +427,7 @@ class AquariusCoordinator(DataUpdateCoordinator[DeviceState]):
         """Stop accepting commands before native platform unloading can yield."""
         self._quiescing = True
         self._command_epoch += 1
+        self._invalidate_compact()
         tasks = {
             task
             for task in (self._active_command, self._active_read)
