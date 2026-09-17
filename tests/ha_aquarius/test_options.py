@@ -20,6 +20,14 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.data_entry_flow import FlowManagerIndexView
 
 
+async def start_labels(hass, entry):
+    menu = await hass.config_entries.options.async_init(entry.entry_id)
+    assert menu["type"] is FlowResultType.MENU
+    return await hass.config_entries.options.async_configure(
+        menu["flow_id"], {"next_step_id": "labels"}
+    )
+
+
 def fictional_labels():
     """These arbitrary names do not describe any observed lamp mapping."""
     return dict(
@@ -30,7 +38,7 @@ def fictional_labels():
 async def test_options_form_uses_serializable_selectors_and_unknown_mapping_defaults(
     hass, config_entry, mock_client
 ):
-    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await start_labels(hass, config_entry)
     assert result["type"] is FlowResultType.FORM
     serialized = FlowManagerIndexView(hass.config_entries.options)._prepare_result_json(result)
     json.dumps(serialized)
@@ -52,7 +60,7 @@ async def test_options_save_normalizes_plain_labels_and_preserves_unrelated_opti
     hass, config_entry, mock_client
 ):
     hass.config_entries.async_update_entry(config_entry, options={"unrelated_option": "preserve"})
-    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await start_labels(hass, config_entry)
     labels = fictional_labels()
     labels["channel_a"] = "  Blue   (left)  "
     result = await hass.config_entries.options.async_configure(result["flow_id"], labels)
@@ -61,7 +69,7 @@ async def test_options_save_normalizes_plain_labels_and_preserves_unrelated_opti
     assert config_entry.options[CONF_CHANNEL_LABELS_VERSION] == CHANNEL_LABELS_VERSION
     assert config_entry.options[CONF_CHANNEL_LABELS]["channel_a"] == "Blue (left)"
     assert config_entry.options["unrelated_option"] == "preserve"
-    reopened = await hass.config_entries.options.async_init(config_entry.entry_id)
+    reopened = await start_labels(hass, config_entry)
     serialized = FlowManagerIndexView(hass.config_entries.options)._prepare_result_json(reopened)
     fields = {field["name"]: field for field in serialized["data_schema"]}
     assert fields["channel_a"]["default"] == "Blue (left)"
@@ -85,7 +93,7 @@ async def test_label_reload_preserves_number_ids_device_identity_and_user_custom
     }
     device_id = dr.async_entries_for_config_entry(dr.async_get(hass), loaded_entry.entry_id)[0].id
     mock_client.reset_mock()
-    result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
+    result = await start_labels(hass, loaded_entry)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], fictional_labels()
     )
@@ -123,7 +131,7 @@ async def test_default_reset_restores_generic_names_without_replacing_entities(
         for entry in er.async_entries_for_config_entry(registry, loaded_entry.entry_id)
     }
     for labels in (fictional_labels(), default_channel_labels()):
-        result = await hass.config_entries.options.async_init(loaded_entry.entry_id)
+        result = await start_labels(hass, loaded_entry)
         result = await hass.config_entries.options.async_configure(result["flow_id"], labels)
         await hass.async_block_till_done()
         assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -152,7 +160,7 @@ async def test_labels_reload_preserves_confirmed_off_memory_without_restoration(
     mock_client.refresh.return_value = off
     mock_client.reset_mock()
 
-    flow = await hass.config_entries.options.async_init(loaded_entry.entry_id)
+    flow = await start_labels(hass, loaded_entry)
     result = await hass.config_entries.options.async_configure(flow["flow_id"], fictional_labels())
     await hass.async_block_till_done()
 
@@ -191,7 +199,7 @@ async def test_invalid_labels_return_serializable_error_without_changes(
 ):
     labels = fictional_labels()
     labels["channel_c"] = label
-    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await start_labels(hass, config_entry)
     result = await hass.config_entries.options.async_configure(result["flow_id"], labels)
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"channel_c": error}
@@ -206,7 +214,7 @@ async def test_invalid_labels_return_serializable_error_without_changes(
 async def test_unknown_label_schema_is_not_overwritten(hass, config_entry, mock_client, version):
     options = {CONF_CHANNEL_LABELS_VERSION: version, CONF_CHANNEL_LABELS: fictional_labels()}
     hass.config_entries.async_update_entry(config_entry, options=options)
-    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await start_labels(hass, config_entry)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "unsupported_label_version"
     assert config_entry.options == options
@@ -223,7 +231,7 @@ async def test_malformed_stored_mapping_keeps_generic_protocol_names(hass, confi
         options={CONF_CHANNEL_LABELS_VERSION: 1, CONF_CHANNEL_LABELS: labels},
     )
     assert channel_labels_from_options(config_entry.options) == default_channel_labels()
-    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await start_labels(hass, config_entry)
     assert result["type"] is FlowResultType.FORM
     serialized = FlowManagerIndexView(hass.config_entries.options)._prepare_result_json(result)
     assert {

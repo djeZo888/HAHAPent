@@ -11,6 +11,13 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
 from .client import AquariusClient, AquariusError
+from .compact import (
+    COMPACT_ROLES_VERSION,
+    CONF_CHANNEL_ROLES,
+    CONF_CHANNEL_ROLES_VERSION,
+    compact_roles_from_options,
+    normalize_channel_roles,
+)
 from .const import (
     CHANNEL_KEYS,
     CHANNEL_LABEL_CHOICES,
@@ -157,9 +164,12 @@ class AquariusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class AquariusOptionsFlow(config_entries.OptionsFlowWithReload):
-    """Persist versioned per-lamp channel labels and refresh native entity names."""
+    """Keep display labels and opt-in colour roles independent and versioned."""
 
     async def async_step_init(self, user_input=None) -> FlowResult:
+        return self.async_show_menu(step_id="init", menu_options=["labels", "compact"])
+
+    async def async_step_labels(self, user_input=None) -> FlowResult:
         version = self.config_entry.options.get(CONF_CHANNEL_LABELS_VERSION)
         if version is not None and (type(version) is not int or version != CHANNEL_LABELS_VERSION):
             return self.async_abort(reason="unsupported_label_version")
@@ -200,4 +210,52 @@ class AquariusOptionsFlow(config_entries.OptionsFlowWithReload):
                 for key in CHANNEL_KEYS
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
+        return self.async_show_form(step_id="labels", data_schema=schema, errors=errors)
+
+    async def async_step_compact(self, user_input=None) -> FlowResult:
+        """Choose physical roles explicitly; saving only reloads read-only state."""
+        options = self.config_entry.options
+        version = options.get(CONF_CHANNEL_ROLES_VERSION)
+        if version is not None and (type(version) is not int or version != COMPACT_ROLES_VERSION):
+            return self.async_abort(reason="unsupported_role_version")
+
+        roles = compact_roles_from_options(options)
+        defaults = {"enabled": roles is not None}
+        defaults.update(dict(zip(CHANNEL_KEYS, roles or ("unused",) * len(CHANNEL_KEYS))))
+        errors = {}
+        if user_input is not None:
+            defaults.update(user_input)
+            updated = dict(options)
+            enabled = user_input.get("enabled")
+            if type(enabled) is not bool:
+                errors["base"] = "invalid_roles"
+            elif not enabled:
+                updated.pop(CONF_CHANNEL_ROLES, None)
+                updated.pop(CONF_CHANNEL_ROLES_VERSION, None)
+                return self.async_create_entry(title="", data=updated)
+            mapping = {key: user_input.get(key) for key in CHANNEL_KEYS}
+            try:
+                normalize_channel_roles(mapping)
+            except ValueError:
+                errors["base"] = "invalid_roles"
+            else:
+                if not errors:
+                    updated[CONF_CHANNEL_ROLES_VERSION] = COMPACT_ROLES_VERSION
+                    updated[CONF_CHANNEL_ROLES] = mapping
+                    return self.async_create_entry(title="", data=updated)
+        schema = vol.Schema(
+            {
+                vol.Required("enabled", default=defaults["enabled"]): bool,
+                **{
+                    vol.Required(key, default=defaults[key]): SelectSelector(
+                        SelectSelectorConfig(
+                            options=["unused", "red", "green", "blue", "white"],
+                            translation_key="channel_role",
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    )
+                    for key in CHANNEL_KEYS
+                },
+            }
+        )
+        return self.async_show_form(step_id="compact", data_schema=schema, errors=errors)

@@ -1,11 +1,13 @@
 # Aquarius Plant LED
 
 Aquarius Plant LED provides local control of the lamp through native Home
-Assistant entities. The 0.3.2 UX includes a main software-power Light, a clear
+Assistant entities. The 0.4.0 UX includes a main software-power Light, a clear
 mode status, **Resume schedule**, configurable spectral labels and native Tile
-sliders. Six independent intensity controls remain available; there is no RGB
-wheel or invented master-brightness control. See [Task 004](../../tasks/004-aquarius-ux.md)
-for the current release, installation and actual hardware acceptance status.
+sliders. An optional compact view adds the native colour-picker dialog and a
+0–100% Intensity slider. The detailed view retains all six channel controls.
+See [Task 005](../../tasks/005-aquarius-compact-controls.md) for the current release
+and actual acceptance; [Task 004](../../tasks/004-aquarius-ux.md) preserves earlier
+control and compact-label evidence.
 
 Version 0.3.2 shortens channel names to their configured label, without the
 "intensity" suffix. The dashboard example displays entity-only names in
@@ -23,7 +25,7 @@ restoration.
 - **Following schedule** means the lamp runs its existing stored time-point
   program. **Resume schedule** returns to that program without editing it.
 - **Manual override** means the six selected percentages are held. Adjusting an
-  intensity slider enters Manual and preserves the other five freshly read
+  detailed channel slider enters Manual and preserves the other five freshly read
   channel values. The mode selector remains available under configuration for
   existing automations; the dashboard uses the clearer status and button.
 - **Lamp Off** requests software Shutdown. It does not switch mains power.
@@ -59,9 +61,51 @@ changes. Identity belongs to the HA config entry because a verified immutable
 serial number is unavailable. Replacing a lamp at the same address with an
 identical raw profile cannot be reliably detected.
 
+## Optional compact colour and intensity
+
+Open the integration's **Configure → Compact controls** options. Enable the
+compact controls and explicitly assign A–F to red, green, blue, white or unused.
+At least one red, green and blue channel is required. These roles describe the
+physical channels; editable colour labels do not determine the mapping. Multiple
+red-family channels can share red without guessing which is ruby. Only configure
+roles established for your lamp. Leave compact controls disabled when uncertain.
+
+The **Compact** dashboard view has two controls:
+
+- **Colour** opens Home Assistant's native colour-picker dialog.
+- **Intensity** scales the current mix from 0 to 100%. Zero requests software
+  Off; 100% puts the strongest channel of that mix at its maximum. This is a
+  controller percentage, not measured light output or an aquarium PAR setting.
+
+Choosing a colour replaces the channel recipe and selects Manual. White channels
+receive the RGB colour's shared white component; mapped primaries receive the
+remaining colour. Duplicate roles receive equal percentages. The preview is an
+approximation: the lamp has independent spectra, not a calibrated RGB display.
+No colour temperature, wavelength or exact visual match is promised.
+
+Changing only Intensity scales all six freshly read channels together, including
+an arbitrary mix made in the detailed view, with integer-percentage rounding.
+At very low output, this resolution can alter ratios. Colour-only changes keep
+current nonzero intensity or a trusted saved Manual intensity. If neither exists,
+an explicit colour starts at 5%. Raising intensity without a known nonzero mix
+requires choosing a colour first. A non-normalized RGB service value also carries
+its own intensity; black requests Off.
+
+The existing Light's plain On/Off behavior is preserved. On restores a confirmed
+Manual-origin mix or resumes the existing schedule; selecting a new colour from
+Off is a deliberate new Manual recipe. The scheduled lamp can have zero output
+while remaining On; explicitly setting the Intensity slider to zero turns it Off.
+All state comes from confirmed lamp reads. Setup, options reload, polling and
+reconnect never restore or replay a colour. Both views control the same existing
+Light and lamp; there is no second integration or device.
+
+The Intensity Number appears only when a valid mapping is enabled. Disabling
+compact controls restores On/Off-only Light capabilities; HA may retain an
+unavailable Intensity registry entry so its ID and owner name survive re-enabling.
+
 ## Colour labels and intensity sliders
 
-Open the integration's **Configure** options to set the six per-lamp labels.
+Open the integration's **Configure → Channel labels** options to set the six per-lamp labels.
 Defaults remain **Channel A–F** until they are identified. Choose daylight white,
 warm white, blue, ruby red, red or green, or enter a distinct short custom label.
 The options are versioned and do not impose one lamp's mapping on other variants.
@@ -81,13 +125,14 @@ colours must stay configurable; they must not be guessed from channel order.
 Use [the complete Tile dashboard example](../../docs/examples/aquarius-tile-dashboard.yaml)
 and replace its generic entity IDs with the existing entities. It uses native
 `numeric-input` slider features, a software-power toggle, mode status and a
-Resume schedule button. Ordinary card taps do nothing. Icon tap or hold opens
-More-info deliberately. Dragging a slider should leave the dashboard in place.
+Resume schedule button. Detailed-view card taps do nothing; the Compact view's
+Colour card opens the picker. Icon tap or hold opens More-info deliberately.
+Dragging a slider should leave the dashboard in place.
 Each channel has a full row and `name: {type: entity}`. This native
 [entity-name setting](https://www.home-assistant.io/dashboards/naming/#entity-name)
 omits the device prefix while following label-option changes and explicit entity
 names; it avoids hard-coded colour labels in the dashboard.
-Actual desktop/mobile interaction results are recorded separately in Task 004;
+Actual desktop/mobile interaction results are recorded separately in Tasks 004 and 005;
 a valid YAML example or an emulated viewport alone does not prove iPhone use.
 
 The example's history graph is optional. To stop recording the six channels,

@@ -15,7 +15,7 @@
 # Apply this to a dedicated dashboard; preserve existing dashboards.
 title: Aquarium
 views:
-- title: Aquarium
+- title: Detailed
   path: aquarium
   cards:
   - type: grid
@@ -198,3 +198,32 @@ views:
     - number.aquarius_example_channel_d
     - number.aquarius_example_channel_e
     - number.aquarius_example_channel_f
+
+# Enable an explicit per-lamp compact role map before adding these two controls.
+# More-info supplies the native RGB colour picker. The separate Number feature
+# includes zero; HA's native Light brightness slider starts at one percent.
+- title: Compact
+  path: compact
+  cards:
+  - type: tile
+    entity: light.aquarius_example_lamp
+    name: Colour
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+  - type: tile
+    entity: number.aquarius_example_intensity
+    name:
+      type: entity
+    tap_action:
+      action: none
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    features:
+    - type: numeric-input
+      style: slider
