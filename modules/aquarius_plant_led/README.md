@@ -1,16 +1,21 @@
 # Aquarius Plant LED
 
 Aquarius Plant LED provides local control of the lamp through native Home
-Assistant entities. The 0.3.1 UX update adds a main software-power Light, a clear
+Assistant entities. The 0.3.2 UX includes a main software-power Light, a clear
 mode status, **Resume schedule**, configurable spectral labels and native Tile
 sliders. Six independent intensity controls remain available; there is no RGB
 wheel or invented master-brightness control. See [Task 004](../../tasks/004-aquarius-ux.md)
 for the current release, installation and actual hardware acceptance status.
 
-Version 0.3.1 publishes saved power-origin attributes only after memory has
+Version 0.3.2 shortens channel names to their configured label, without the
+"intensity" suffix. The dashboard example displays entity-only names in
+full-width rows, keeping longer labels readable without repeating the lamp name.
+This preserves A–F identities, existing entity IDs and owner-assigned names.
+
+The 0.3.1 repair publishes saved power-origin attributes only after memory has
 settled, so the Light immediately describes the correct next On action. The
 immutable 0.3.0 candidate retains a known stale-attribute issue after Off; use
-0.3.1 for this UX. This repair does not alter protocol commands or add background
+0.3.1 or later for this UX. This repair does not alter protocol commands or add background
 restoration.
 
 ## Everyday use
@@ -65,6 +70,8 @@ The entity's `protocol_channel` attribute always retains its A–F letter.
 Label changes preserve `channel_a` through `channel_f` unique IDs and existing
 entity IDs. A name explicitly assigned in Home Assistant's entity registry takes
 precedence; clear that custom name if you want the integration's selected label.
+The Number name is the selected label alone, such as **Daylight white** or the
+generic **Channel A**. No global entity-registry rename is needed.
 Each slider uses integer `0–100%` steps. These values are controller settings,
 not calibrated spectral output or wavelength measurements. Ambiguous optical
 colours must stay configurable; they must not be guessed from channel order.
@@ -76,6 +83,10 @@ and replace its generic entity IDs with the existing entities. It uses native
 `numeric-input` slider features, a software-power toggle, mode status and a
 Resume schedule button. Ordinary card taps do nothing. Icon tap or hold opens
 More-info deliberately. Dragging a slider should leave the dashboard in place.
+Each channel has a full row and `name: {type: entity}`. This native
+[entity-name setting](https://www.home-assistant.io/dashboards/naming/#entity-name)
+omits the device prefix while following label-option changes and explicit entity
+names; it avoids hard-coded colour labels in the dashboard.
 Actual desktop/mobile interaction results are recorded separately in Task 004;
 a valid YAML example or an emulated viewport alone does not prove iPhone use.
 

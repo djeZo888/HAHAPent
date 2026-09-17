@@ -100,11 +100,15 @@ async def test_label_reload_preserves_number_ids_device_identity_and_user_custom
         == device_id
     )
     assert registry.async_get("number.owner_named_channel").name == "Owner's custom label"
-    assert "Owner's custom label" in hass.states.get("number.owner_named_channel").name
+    assert hass.states.get("number.owner_named_channel").name == "Owner's custom label"
     for key, label in fictional_labels().items():
         entity_id = before_ids[f"{loaded_entry.entry_id}_{key}"]
         entry = registry.async_get(entity_id)
-        assert entry.original_name == f"{label} intensity"
+        assert entry.original_name == label
+        assert entry.has_entity_name is True
+        assert er.async_get_unprefixed_name(hass, entry) == (
+            "Owner's custom label" if key == "channel_b" else label
+        )
         assert hass.states.get(entity_id).attributes["protocol_channel"] == key[-1].upper()
     mock_client.set_channel.assert_not_awaited()
     mock_client.set_mode.assert_not_awaited()

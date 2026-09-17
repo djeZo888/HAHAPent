@@ -6,6 +6,9 @@
 # https://github.com/home-assistant/frontend/blob/20260826.6/src/panels/lovelace/card-features/hui-toggle-card-feature.ts
 # Numeric slider min/max/step/unit come from the Number entity (0/100/1/%).
 # Labels/options do not rename existing entity IDs; keep those IDs in the dashboard.
+# Entity-only names omit the device prefix and follow per-lamp labels/custom names:
+# https://www.home-assistant.io/dashboards/naming/
+# One channel per row gives longer labels and sliders more space on narrow screens.
 # History is optional and uses existing Recorder data only. Remove the history-graph
 # card if no history is wanted. If history is empty, review your own Recorder
 # inclusion/exclusion settings; this example never changes Recorder or retention.
@@ -68,11 +71,13 @@ views:
       - type: button
         action_name: Resume schedule
   - type: grid
-    columns: 2
+    columns: 1
     square: false
     cards:
     - type: tile
       entity: number.aquarius_example_channel_a
+      name:
+        type: entity
       tap_action:
         action: none
       icon_tap_action:
@@ -90,6 +95,8 @@ views:
         style: slider
     - type: tile
       entity: number.aquarius_example_channel_b
+      name:
+        type: entity
       tap_action:
         action: none
       icon_tap_action:
@@ -107,6 +114,8 @@ views:
         style: slider
     - type: tile
       entity: number.aquarius_example_channel_c
+      name:
+        type: entity
       tap_action:
         action: none
       icon_tap_action:
@@ -124,6 +133,8 @@ views:
         style: slider
     - type: tile
       entity: number.aquarius_example_channel_d
+      name:
+        type: entity
       tap_action:
         action: none
       icon_tap_action:
@@ -141,6 +152,8 @@ views:
         style: slider
     - type: tile
       entity: number.aquarius_example_channel_e
+      name:
+        type: entity
       tap_action:
         action: none
       icon_tap_action:
@@ -158,6 +171,8 @@ views:
         style: slider
     - type: tile
       entity: number.aquarius_example_channel_f
+      name:
+        type: entity
       tap_action:
         action: none
       icon_tap_action:

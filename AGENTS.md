@@ -15,16 +15,26 @@ publication/update, and necessary gated test-dev Core restarts. Leave the final
 version installed and configured for owner review. Current evidence belongs in
 `tasks/004-aquarius-ux.md` and `docs/development.md`.
 
-Test-dev now has immutable module 0.3.1 with the existing entry, identities,
+The completed Task 004 baseline has immutable module 0.3.1 with the existing entry, identities,
 label options and dashboard preserved. Its source tests, independent review,
 CI, public artifact verification and actual Manual/Automatic power and six
 Number controls passed. Final native lifecycle acceptance also passed and
 Manager 0.1.2 is running.
-The original Manual lamp state is restored. Browser/iPhone touch remains
+At that handoff the original Manual lamp state was restored. Browser/iPhone touch remains
 NOT_TESTED; D/F red versus ruby stays explicitly configurable, and normal
 Automatic interpolation is undetermined. Preserve these evidence limits.
 The bounded procedures below are historical acceptance safeguards; do not infer
 a blanket grant for future physical-device experiments from this completed work.
+
+The owner's September 17 follow-up authorizes a compact-label 0.3.2 release,
+GitHub publication, update of the existing test-dev integration and dashboard,
+and necessary gated Core restart. Remove the repeated device prefix from the
+six Number Tiles using native entity-only names and provide enough row width
+for their colour labels. Preserve entity identities, options, custom names and
+all other cards. Verify actual browser text visibility after updating; emulated
+viewport checks are distinct from iPhone touch testing. This visual change needs
+no lamp-output commands, mode/power tests, camera use or Manager rebuild. Observe
+the current lamp state; never restore a historical snapshot from Task 004.
 
 The private camera share is for read-only optical observation only. Never
 publish its URL/token, device targets, frames/video or operational evidence.
