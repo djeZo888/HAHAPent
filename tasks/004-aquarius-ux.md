@@ -366,3 +366,16 @@ control acceptance. Fresh startup/KNX review and encrypted backup creation,
 private download and isolated decryption/readability passed before deployment.
 Full live restoration is NOT_TESTED. Release/update and final visual results
 will be recorded after execution. This task sends no lamp-output commands.
+
+The [0.3.2 immutable candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.2)
+was built twice reproducibly from source
+`010be57a40c648da573475555fc53b72b1a5e4d9`. Its ZIP SHA-256 is
+`bbb635deca4380d9807c1cf3e513478ea61640f72db8342f0a8ae9a5402fc254`.
+All four uploaded assets were downloaded without authentication and matched the
+local bytes; the release tag resolves to the source commit. The 12 module-builder
+tests, Ruff, catalog/bundle checks and staged/outgoing privacy checks passed.
+[Source CI](https://github.com/djeZo888/HAHAPent/actions/runs/35219645736)
+completed successfully, including both synthetic unit-test jobs, native HA
+fixtures and the isolated App runtime checks. The catalog admits tested HA
+2026.9.1 and 2026.9.2 for 0.3.2; all earlier entries remain unchanged. The
+Manager bootstrap catalog copy is synchronized without rebuilding the App.
