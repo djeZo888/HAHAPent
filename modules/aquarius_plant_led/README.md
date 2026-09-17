@@ -63,7 +63,7 @@ identical raw profile cannot be reliably detected.
 
 ## Optional compact colour and intensity
 
-Open the integration's **Configure → Compact controls** options. Enable the
+Open the integration's **Configure → Compact colour and intensity** options. Enable the
 compact controls and explicitly assign A–F to red, green, blue, white or unused.
 At least one red, green and blue channel is required. These roles describe the
 physical channels; editable colour labels do not determine the mapping. Multiple
@@ -72,7 +72,8 @@ roles established for your lamp. Leave compact controls disabled when uncertain.
 
 The **Compact** dashboard view has two controls:
 
-- **Colour** opens Home Assistant's native colour-picker dialog.
+- **Colour** opens the native Light dialog. Select its **Color** wheel button
+  to show the picker; the dialog initially shows its brightness control.
 - **Intensity** scales the current mix from 0 to 100%. Zero requests software
   Off; 100% puts the strongest channel of that mix at its maximum. This is a
   controller percentage, not measured light output or an aquarium PAR setting.
@@ -105,7 +106,7 @@ unavailable Intensity registry entry so its ID and owner name survive re-enablin
 
 ## Colour labels and intensity sliders
 
-Open the integration's **Configure → Channel labels** options to set the six per-lamp labels.
+Open the integration's **Configure → Channel display labels** options to set the six per-lamp labels.
 Defaults remain **Channel A–F** until they are identified. Choose daylight white,
 warm white, blue, ruby red, red or green, or enter a distinct short custom label.
 The options are versioned and do not impose one lamp's mapping on other variants.

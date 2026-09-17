@@ -2,16 +2,27 @@
 
 ## Current scope
 
-The owner subsequently authorized implementing optional compact native colour
-and 0–100% intensity controls while preserving the detailed six-channel view.
-Task 005 is in progress in `tasks/005-aquarius-compact-controls.md`, targeting
-module 0.4.0 from delivered 0.3.2. Use its explicit semantic-role mapping, preserve
-existing Light/channel identities and power-origin behavior, and keep all
-background paths read-only. Only the coordinator performs live operations.
-New bounded physical validation requires passing offline failure tests and
-independent documented review of both the runtime and new detached worker.
-Its current-mode guard and Automatic-only recovery must never restore a Task 004
-snapshot. Preserve 0.3.2 until the new version passes the full delivery gates.
+The owner's compact-control follow-up is delivered as immutable module 0.4.0;
+evidence is in `tasks/005-aquarius-compact-controls.md`. Test-dev has the same
+integration entry and existing Light/channel identities, plus an optional native
+0–100% Intensity Number: 16 entities are available. Explicit versioned colour
+roles are independent of display names. Both Detailed and Compact native views
+are installed; their labels, slider bounds and colour dialog passed desktop and
+390-pixel browser checks. Actual iPhone touch and calibrated colour remain
+NOT_TESTED. The picker is an approximate spectral mix.
+
+Three reviewed, detached HA-side compact tests passed, including zero-Off and
+new colour from Off, with guarded Automatic-only recovery. Fresh post-test reads
+and native reload confirmed Following schedule. Keep that final working setup;
+never restore the historical Task 004 Manual snapshot. Manager 0.1.2 remains
+running, and identities, label options, owner names, KNX and startup configuration
+are preserved. All earlier immutable releases and incident reports remain intact.
+
+Only the coordinator performs live operations. Preserve power-origin behavior
+and query-only setup, startup, polling, options reload and reconnect. Completed
+Task 005 acceptance does not grant blanket authority for future experiments;
+new physical procedures require applicable user authorization, offline failure
+tests and independent documented review of runtime and detached recovery.
 
 Tasks 001–003 are complete. Task 003's final committed baseline is
 `cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24`; its Manager 0.1.2 and Aquarius Plant
@@ -128,7 +139,8 @@ Only the coordinator may mutate HA or merge/push Git. Subagents may implement,
 test, or review isolated assigned source files; never provide them raw secrets.
 Use only the exact repository and host selected by the protected profile.
 Preserve KNX, existing integrations, automations, App keys/options, and remote
-history. No device controls outside the authorized bounded Task 004 lamp tests, production access, network scans,
+history. No device controls outside the currently authorized, reviewed task
+procedure; historical Task 004/005 acceptance is not a blanket grant. No production access, network scans,
 Proxmox administration, Supervisor/OS/VM restarts, or firmware upgrades.
 Authorized Core restarts require the documented startup/KNX and backup safety gate.
 Before deployment take a fresh encrypted backup, download it privately, retain
@@ -157,6 +169,7 @@ the authorized isolated marker round trip. Test-dev credentials are never
 available to public CI. A new task must not inherit authority to mutate HA
 merely from a previous task's completed write probe.
 
-Task 004 commands and evidence are recorded in `docs/development.md` and
-`tasks/004-aquarius-ux.md` as checks complete. Tasks 001–003 evidence remains historical. Public CI must use only
+Task 005 commands and evidence are recorded in `docs/development.md` and
+`tasks/005-aquarius-compact-controls.md`. Task 004 evidence remains in
+`tasks/004-aquarius-ux.md`; Tasks 001–003 evidence remains historical. Public CI must use only
 synthetic fixtures and minimal built-in GitHub workflow permissions.
