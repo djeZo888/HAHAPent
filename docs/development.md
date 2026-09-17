@@ -455,3 +455,14 @@ pins (2026.9.2 and 0.13.365); public CI retains the committed pinned environment
 No new lamp-control validation is required for the naming-only runtime change.
 Publication, actual update and visual results are recorded in
 [Task 004](../tasks/004-aquarius-ux.md), separately from historical physical tests.
+
+
+Actual 0.3.2 Manager Refresh/Update, exact installed-file verification and one
+gated Core restart passed on HA 2026.9.2. The original 15 entities, entry/device,
+options, custom names, Manager settings and KNX/startup configuration survived.
+The six scoped native dashboard changes survived the restart. Actual browser
+screenshots and DOM widths verified all six labels without clipping at desktop
+and 390-pixel responsive width; iPhone touch remains NOT_TESTED. No lamp-output
+command was sent. Public release bytes and all historical assets remain intact;
+only release/catalog acceptance metadata was promoted. Main CI for catalog
+publication passed; the final delivery record uses the same completed-CI merge gate.
