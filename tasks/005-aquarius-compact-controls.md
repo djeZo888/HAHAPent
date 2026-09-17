@@ -1,11 +1,13 @@
 # Task 005 — Optional compact Aquarius colour and intensity controls
 
-Status: **IN PROGRESS**. The owner explicitly requested implementation of a
+Status: **DELIVERED — 0.4.0 installed and configured for owner review**.
+The owner explicitly requested implementation of a
 compact colour-picker/intensity view while retaining the detailed six-channel
 view. This follows delivered immutable 0.3.2 at main
 `184542a3ec810e93e1a6e52eba36aee2b75fdbd5`; that working release, its visual
 acceptance and all historical Task 004 evidence remain intact. Work proceeds on
-`codex/aquarius-compact-colour`, targeting independently versioned module 0.4.0.
+`codex/aquarius-compact-colour`, delivering independently versioned module 0.4.0;
+the final acceptance record uses `codex/aquarius-compact-delivery`.
 
 ## Behavior and design
 
@@ -103,5 +105,91 @@ unauthenticated downloads matched local bytes, and the tag resolves to the exact
 source commit. The canonical and bundled catalogs append 0.4.0 without changing
 prior releases. Catalog validation and bundle consistency pass.
 
-Test-dev installation, bounded lamp tests and final browser/lifecycle acceptance
-remain **NOT_TESTED** at this publication checkpoint.
+At that publication checkpoint, actual acceptance remained NOT_TESTED.
+
+Catalog PR #16 merged as `72e92f3bffe6125090a034429029d33bf2fba586` after
+completed push CI `35225683605` and PR CI `35225688682`; main CI `35226160312`
+also passed. The final acceptance metadata promotes the existing release and
+canonical catalog without replacing its source tag or four immutable assets.
+All prior release IDs, targets and assets are preserved.
+
+## Actual test-dev update and configuration
+
+PASS: a fresh encrypted backup covering HA configuration/database and the
+existing Manager/Terminal Apps was downloaded privately. All three encrypted
+archive members decrypted and their content was readable. A live full restore
+was **NOT_TESTED**. Fresh startup/KNX checks passed before update and restart.
+
+Actual Manager 0.1.2 Refresh/Update installed 0.4.0 through the normal catalog.
+All 17 installed source files exactly match the public ZIP. Core configuration
+check and one gated Core restart passed on HA 2026.9.2. Before compact setup,
+the original 15 available entities, entry/device identities, names and options
+were unchanged. No App rebuild was required.
+
+Native options setup enabled the versioned semantic roles using the existing
+private optical evidence. Display labels remained unchanged; the ambiguous
+red-family pair remains unresolved as red versus ruby. No new optical mapping
+or camera access occurred. The native options reload created only the optional
+Intensity Number, giving 16 available entities and RGB capability on the existing
+Light. The original channel identities and owner-assigned names are preserved.
+
+The existing dashboard path now has a Detailed tab with unchanged cards and a
+Compact tab containing Colour and Intensity Tiles. Other dashboard configuration
+and metadata are preserved. Native options and a subsequent explicit integration
+reload passed; both views, roles, labels and identities survived. Final installed
+bytes still match the immutable artifact. Manager remains running and KNX is
+connected, with its configuration and other devices preserved.
+
+## Actual bounded lamp acceptance
+
+The frozen worker and dependencies were transferred to the existing private
+HA-side runtime and their hashes matched the independent review. Entity ownership
+was verified against the same entry/device, and all three private configurations
+passed parse-only validation without token or network use.
+
+The private detached launcher also received independent review. Offline tests
+reproduced assertion gates being bypassed by optimized Python, dangling output
+symlinks, and missing atomic pre-spawn claims. Explicit validation and a no-follow,
+exclusive, fsynced claim repaired these before any live probe. Nine launcher
+tests and two query-only tests passed. Tokens entered child memory through stdin;
+uncertain launches retained their claim and could not be replayed.
+
+Each actual run started from freshly confirmed modest Automatic output. No
+historical Manual snapshot was restored. Expectations were calculated separately
+from the production mixer, and successful native HTTP completion was followed by
+independent complete TCP readback and native mode status.
+
+| Actual procedure | Native actions confirmed | Experiment | Automatic recovery | Total excursion |
+| --- | ---: | --- | --- | ---: |
+| Colour with explicit modest intensity | 1 | PASS | PASS | 2.755510 s |
+| Colour, proportional Intensity increase, literal zero-Off | 3 | PASS | PASS | 6.723512 s |
+| Automatic-origin zero-Off, then new colour without an intensity parameter | 2 | PASS | PASS | 5.717631 s |
+
+The single-action run stayed within ten seconds; the two composites stayed
+within twenty seconds, including confirmed cleanup. The final case exercised
+guarded Manual wake and the documented modest colour-only fallback. Three fresh
+HA-side read-only confirmations followed each cleanup. Query-only native refresh
+confirmed all 16 entities available and Following schedule. A final native reload
+and three further independent reads also passed. **No actual experiment failed.**
+
+These results establish the tested native control paths and readback, not optical
+colour accuracy. No schedule, clock, preset, firmware, mains switch, KNX device,
+camera setting, network/security setting or production system was changed.
+
+## Actual browser acceptance and remaining limits
+
+Both tabs are present in the real installed dashboard. All six detailed titles
+have equal rendered and scroll widths: 238 pixels at desktop, 308 pixels at a
+390-pixel viewport. Screenshots included the lower channels after scrolling.
+Colour and Intensity also fit at narrow width; the native slider exposes minimum
+0 and maximum 100. The native Color wheel renders at desktop and phone width.
+Opening Colour initially shows HA's brightness control; select its Color wheel
+button to display the picker. The temporary viewport override was reset and the
+working Compact view was left open for the owner.
+
+Browser navigation/rendering is **PASS**. Actual iPhone touch/drag, browser output
+gestures, calibrated colour accuracy and full backup restore remain **NOT_TESTED**.
+Bounded lamp actions used the reviewed HA-side native service procedure, not
+uncontrolled browser gestures. Pure mixing tests, native framework simulations,
+hosted CI and actual lamp results above are distinct evidence. Private targets,
+role evidence, captures, raw reports and credentials remain outside Git.

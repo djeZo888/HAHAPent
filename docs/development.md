@@ -486,5 +486,26 @@ The new worker begins from fresh low Automatic output, uses guarded native
 actions and Automatic-only recovery, and never restores an old Manual snapshot.
 Only the coordinator executes it on the existing HA-side runtime. A fresh
 encrypted backup, private download and isolated content decryption/readability
-have passed; a live full restore is NOT_TESTED. Actual deployment and lamp
-acceptance are pending at this checkpoint.
+have passed; a live full restore is NOT_TESTED. At that source checkpoint,
+actual deployment and lamp acceptance were pending.
+
+Final **0.4.0 acceptance PASS**: 571 local unit tests, 168 native HA tests on each
+of HA 2026.9.1/2026.9.2, independent runtime and worker review, reproducible
+17-file artifact, public download verification and completed source/catalog CI.
+Actual Manager Refresh/Update, gated Core restart, native options setup and
+explicit reload passed on HA 2026.9.2. The original 15 identities/options/names
+are preserved; the optional Intensity Number brings the available total to 16.
+
+Three separately reviewed HA-side probes passed colour, proportional intensity,
+zero-Off and new colour from Off, with confirmed Automatic-only recovery in
+2.76, 6.72 and 5.72 seconds. Fresh independent reads and query-only native refresh
+followed every probe; no actual experiment failed. Manager 0.1.2 remains running,
+KNX remains connected, and the lamp is Following schedule. Both native dashboard
+views are installed; all six detailed labels, compact slider bounds and the
+colour wheel passed actual desktop/390-pixel browser checks. The viewport was
+reset. iPhone touch/drag and calibrated colour accuracy remain NOT_TESTED.
+
+The release was promoted through metadata only; its tag/assets and all earlier
+releases remain unchanged. [Task 005](../tasks/005-aquarius-compact-controls.md)
+contains the source, CI and actual acceptance details. No private operational
+evidence, endpoint, role mapping or capture is included in Git.

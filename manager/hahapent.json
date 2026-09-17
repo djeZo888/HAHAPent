@@ -239,7 +239,7 @@
     {
       "id": "aquarius-plant-led",
       "name": "Aquarius Plant LED",
-      "description": "Optional native approximate colour picker and zero-to-100 intensity, with explicit independent channel roles and preserved detailed controls. Candidate pending actual test-dev acceptance.",
+      "description": "Optional approximate native colour picker and zero-to-100 intensity with explicit channel roles, preserved detailed controls and validated bounded lamp/HA acceptance. Both dashboard views and unclipped channel labels verified; iPhone touch and calibrated colour remain untested.",
       "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.4.0/modules/aquarius_plant_led/README.md",
       "integration_domain": "aquarius_plant_led",
       "version": "0.4.0",
@@ -268,11 +268,15 @@
         "manager": "not_required"
       },
       "extensions": {
-        "release_status": "compact-control-candidate",
-        "live_ha_acceptance": "pending_compact_validation",
+        "release_status": "validated",
+        "live_ha_acceptance": "passed_2026.9.2",
         "touch_acceptance": "not_tested",
+        "browser_acceptance": "desktop_and_390px_labels_slider_range_colour_wheel_passed",
         "colour_representation": "approximate_explicit_channel_roles",
-        "detailed_controls": "preserved"
+        "calibrated_colour_accuracy": "not_tested",
+        "detailed_controls": "preserved",
+        "native_lifecycle": "update_core_restart_options_and_explicit_reload_passed",
+        "actual_lamp_validation": "three_bounded_native_compact_probes_and_automatic_recovery_passed"
       }
     }
   ],
