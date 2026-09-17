@@ -1,13 +1,18 @@
 # Task 004 — Aquarius Plant LED UX, optical labels and software power
 
-Status: **DELIVERED for owner review**. Immutable **0.3.1** is installed and
-configured on test-dev; Manager **0.1.2** is running. Actual Manual/Automatic
+Current visual follow-up: **0.3.2 DELIVERED for owner review**; all six slider
+labels fit in the actual desktop and 390-pixel browser layouts. See the
+September 17 follow-up below.
+
+Original Task 004 handoff: immutable **0.3.1** was installed and
+configured on test-dev; Manager **0.1.2** was running. Actual Manual/Automatic
 power, all six channel controls, rollback/update, reload, startup and read-only
 connection recovery passed. The existing identities, per-lamp labels and native
 Tile dashboard are preserved, and the original Manual lamp state is restored.
 
-Browser/iPhone gestures remain **NOT_TESTED** because the Mac stayed locked and
-no browser surface was available. D/F red versus ruby remains explicitly
+At the original handoff, browser/iPhone gestures were **NOT_TESTED** because the
+Mac stayed locked and no browser surface was available. The September 17
+follow-up verifies browser text rendering; iPhone touch remains **NOT_TESTED**. D/F red versus ruby remains explicitly
 configurable, and normal Automatic interpolation is **UNDETERMINED**. These
 observational limits are not represented as passed acceptance. Private targets,
 the camera share, captures and detailed operational evidence remain outside Git.
@@ -17,7 +22,7 @@ the camera share, captures and detailed operational evidence remain outside Git.
 Task 003 completed at main `cbe8d2f6c9a2ec4c04564da3230cf4cae2e08a24`.
 Its final main CI [completed successfully](https://github.com/djeZo888/HAHAPent/actions/runs/34293970401).
 The new branch is `task/004-aquarius-ux`. Protected API and pinned SSH access
-passed read-only checks; current HA is 2026.9.1. Existing Manager 0.1.2 and module
+passed read-only checks; the original Task 004 HA baseline was 2026.9.1. Existing Manager 0.1.2 and module
 0.2.0 are the working baseline. Historical Task 003 failures, successful tests,
 and immutable releases are retained.
 
@@ -364,8 +369,8 @@ The repository's pinned test requirements and CI are unchanged. Both suites
 disable external network sockets. These are synthetic tests, not new physical
 control acceptance. Fresh startup/KNX review and encrypted backup creation,
 private download and isolated decryption/readability passed before deployment.
-Full live restoration is NOT_TESTED. Release/update and final visual results
-will be recorded after execution. This task sends no lamp-output commands.
+Full live restoration is NOT_TESTED. Completed release/update and visual results
+are recorded below. This visual follow-up sends no lamp-output commands.
 
 The [0.3.2 immutable candidate](https://github.com/djeZo888/HAHAPent/releases/tag/aquarius-plant-led-v0.3.2)
 was built twice reproducibly from source
@@ -379,3 +384,40 @@ completed successfully, including both synthetic unit-test jobs, native HA
 fixtures and the isolated App runtime checks. The catalog admits tested HA
 2026.9.1 and 2026.9.2 for 0.3.2; all earlier entries remain unchanged. The
 Manager bootstrap catalog copy is synchronized without rebuilding the App.
+
+
+The [catalog publication PR 14](https://github.com/djeZo888/HAHAPent/pull/14)
+merged only after both [push CI](https://github.com/djeZo888/HAHAPent/actions/runs/35220061869)
+and [PR CI](https://github.com/djeZo888/HAHAPent/actions/runs/35220121569)
+completed successfully. Its merge is `d3b6236059c40b63f2e5c5519b9d86c5109cab15`;
+[main CI also passed](https://github.com/djeZo888/HAHAPent/actions/runs/35220463782).
+
+Actual Manager 0.1.2 Refresh discovered compatible 0.3.2 and Update completed.
+All 16 installed native files match the immutable ZIP exactly. A fresh repeated
+startup/KNX gate and Core configuration check passed, followed by one authorized
+Core restart. On HA **2026.9.2**, the same entry/device and all **15** entities
+are loaded and available. Entity/unique IDs, options and owner names are exactly
+preserved. Manager remains 0.1.2 and running; its settings, App protections,
+startup files and KNX project files match the private baselines. KNX is connected.
+The current lamp operation was preserved without sending output commands; no
+historical Manual snapshot was restored.
+
+The existing dashboard was updated through HA's native dashboard API. A fresh
+configuration comparison guarded against concurrent edits; only six Number-card
+name settings and their grid's column count changed. The full configuration and
+dashboard metadata were verified after the Core restart. Browser screenshots
+and DOM measurements confirm **all six labels fit**: each title has 238 px at
+the normal desktop layout and 308 px at a 390-pixel responsive viewport, with
+no text overflow. The lower channels were also inspected after scrolling. The
+viewport override was reset and the updated dashboard left open. This is actual
+browser rendering evidence, not simulated markup or iPhone touch acceptance.
+No slider, power or mode service was invoked. No camera use, Manager rebuild,
+schedule upload, other-device control, production or network/security change
+occurred. Broader physical control/rollback testing remains the historical 0.3.1
+evidence; repeating it was NOT_REQUIRED for this naming-only runtime change.
+
+The 0.3.2 release is promoted by metadata only. Its source tag, four asset IDs
+and bytes, and every earlier release are unchanged. The immutable attached
+catalog retains its publication-time candidate status; the canonical catalog
+now records completed visual/update acceptance. Final checks and hosted CI for
+this delivery record must pass before merging it.

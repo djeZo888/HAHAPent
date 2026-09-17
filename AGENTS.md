@@ -36,6 +36,13 @@ viewport checks are distinct from iPhone touch testing. This visual change needs
 no lamp-output commands, mode/power tests, camera use or Manager rebuild. Observe
 the current lamp state; never restore a historical snapshot from Task 004.
 
+The compact-label follow-up is delivered as immutable 0.3.2 on HA 2026.9.2.
+Actual Manager update and gated Core restart passed; all 15 entities, identities,
+options, owner names and KNX/startup files are preserved. All six slider titles
+fit in actual desktop and 390-pixel browser layouts. No lamp-output commands
+were sent; iPhone touch and new physical-control tests were not performed.
+Manager 0.1.2 remains running. Preserve these separate visual acceptance limits.
+
 The private camera share is for read-only optical observation only. Never
 publish its URL/token, device targets, frames/video or operational evidence.
 Use multiple frames for optical comparisons; do not guess ambiguous colour

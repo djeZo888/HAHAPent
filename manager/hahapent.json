@@ -199,7 +199,7 @@
     {
       "id": "aquarius-plant-led",
       "name": "Aquarius Plant LED",
-      "description": "Compact configurable channel labels and native entity-only Tile names in full-width slider rows. Visual update candidate; prior 0.3.1 controls are unchanged. Final browser/update evidence will be recorded in Task 004.",
+      "description": "Compact configurable channel labels and native entity-only Tile names in full-width slider rows. Actual Manager update, Core startup and browser text visibility passed; existing controls, identities and options are preserved. See Task 004 for evidence and limits.",
       "documentation_url": "https://github.com/djeZo888/HAHAPent/blob/aquarius-plant-led-v0.3.2/modules/aquarius_plant_led/README.md",
       "integration_domain": "aquarius_plant_led",
       "version": "0.3.2",
@@ -228,11 +228,12 @@
         "manager": "not_required"
       },
       "extensions": {
-        "release_status": "visual-update-candidate",
+        "release_status": "validated-visual-update",
         "hardware_controls": "unchanged_from_validated_0.3.1",
-        "live_ha_acceptance": "pending_visual_update",
+        "live_ha_acceptance": "update_startup_labels_preserved",
         "touch_acceptance": "not_tested",
-        "colour_mapping": "preserved_existing_options"
+        "colour_mapping": "preserved_existing_options",
+        "browser_labels": "desktop_and_390px_all_six_fit"
       }
     }
   ],
